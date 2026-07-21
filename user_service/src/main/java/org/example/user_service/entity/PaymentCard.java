@@ -2,10 +2,10 @@ package org.example.user_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,21 +15,23 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "payment_cards")
+@EntityListeners(AuditingEntityListener.class)
 public class PaymentCard {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private BigDecimal id;
-    private Integer number;
+    private Long id;
+    @Column(nullable = false,  unique = true)
+    private String number;
     private String holder;
     private LocalDateTime expirationDate;
     private Boolean active;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id",  nullable = false)
     private User user;
 
-    @CreationTimestamp
+    @CreatedDate
     private LocalDateTime createdDate;
-    @UpdateTimestamp
+    @LastModifiedDate
     private LocalDateTime updatedDate;
 }
