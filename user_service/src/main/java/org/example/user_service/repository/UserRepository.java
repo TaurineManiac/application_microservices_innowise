@@ -1,10 +1,28 @@
 package org.example.user_service.repository;
 
+import io.lettuce.core.dynamic.annotation.Param;
 import org.example.user_service.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
-import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, BigDecimal> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
+    Long getUserByEmail(String id);
+
+    @Query("SELECT u FROM User u where u.active = true")
+    List<User> findAllActiveUsers();
+
+    @Query(value = "SELECT * FROM users WHERE LOWER(name) = LOWER(:name) ",  nativeQuery = true)
+    List<User> findAllByName(@Param("name") String name);
+
+    @EntityGraph(attributePaths = {"paymentCards"})
+    Optional<User> findById(Long id);
+
+    @Query("SELECT COUNT(c) FROM PaymentCard c WHERE c.user.id = :userId")
+    int countCardsByUserId(@Param("userId") Long userId);
 }
