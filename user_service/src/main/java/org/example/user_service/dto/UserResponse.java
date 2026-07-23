@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 public class UserResponse {
     private Long id;
+    private String publicId;
     private String name;
     private String surname;
     private LocalDate dateOfBirth;
