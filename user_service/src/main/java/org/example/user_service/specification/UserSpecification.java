@@ -5,7 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 public class UserSpecification {
 
-    public static Specification<User> hasFirstname(String name) {
+    public static Specification<User> hasName(String name) {
         return (root, query, criteriaBuilder) ->{
             if(name == null || name.isEmpty()){
                 return criteriaBuilder.conjunction();

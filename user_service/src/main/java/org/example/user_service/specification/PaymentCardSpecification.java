@@ -18,7 +18,7 @@ public class PaymentCardSpecification {
         });
     }
 
-    public static Specification<PaymentCard> hasCardHolder(String holder) {
+    public static Specification<PaymentCard> hasHolder(String holder) {
         return ((root, query, criteriaBuilder) ->  {
             if(holder == null || holder.isEmpty()) return criteriaBuilder.conjunction();
             return criteriaBuilder.like(root.get("holder"), "%" + holder + "%");
