@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.math.BigDecimal;
 import java.util.List;
 
-public interface PaymentCardRepository extends JpaRepository<PaymentCard, BigDecimal>, JpaSpecificationExecutor<PaymentCard> {
+public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
     List<PaymentCard> findAllByUser_Id(Long id);
 
     @Query("SELECT c FROM PaymentCard c WHERE c.user.id = :userId AND c.active = true ")
@@ -23,4 +23,6 @@ public interface PaymentCardRepository extends JpaRepository<PaymentCard, BigDec
     long countByUserId(Long userId);
 
     boolean existsByNumber(String number);
+
+    boolean findPaymentCardByNumber(String number);
 }

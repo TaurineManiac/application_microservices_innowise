@@ -1,6 +1,8 @@
 package org.example.user_service.repository;
 
 import io.lettuce.core.dynamic.annotation.Param;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import org.example.user_service.entity.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,7 +14,7 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
-    Long getUserByEmail(String id);
+    Optional<User> getUserByEmail(@Email String email);
 
     @Query("SELECT u FROM User u where u.active = true")
     List<User> findAllActiveUsers();
@@ -25,4 +27,11 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("SELECT COUNT(c) FROM PaymentCard c WHERE c.user.id = :userId")
     int countCardsByUserId(@Param("userId") Long userId);
+
+    boolean existsByEmail(@NotBlank(message = "Email is required") @Email(message = "Email must be valid") String email);
+
+    @EntityGraph(attributePaths = {"paymentCards"})
+    Optional<User> findByPublicId(String publicId);
+
+    boolean existsByPublicId(String uuid);
 }
