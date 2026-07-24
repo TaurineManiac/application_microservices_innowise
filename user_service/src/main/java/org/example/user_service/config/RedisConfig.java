@@ -1,0 +1,41 @@
+package org.example.user_service.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.Duration;
+
+@Configuration
+@EnableCaching
+public class RedisConfig {
+
+    @Bean //that heap of new data is terrible :_)
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+
+        GenericJacksonJsonRedisSerializer serializer = GenericJacksonJsonRedisSerializer.builder().build();
+
+        RedisCacheConfiguration config = RedisCacheConfiguration
+                .defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10))
+                .serializeKeysWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer())
+                )
+                .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(serializer)
+                )
+                .disableCachingNullValues();
+
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(config)
+                .build();
+    }
+}
