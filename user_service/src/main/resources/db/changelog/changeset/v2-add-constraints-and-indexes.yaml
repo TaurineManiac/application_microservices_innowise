@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2
+      author: Ignat
+      changes:
+        - addUniqueConstraint:
+            tableName: users
+            columnNames: email
+            constraintName: uk_users_email
+        - addUniqueConstraint:
+            tableName: payment_cards
+            columnNames: number
+            constraintName: uk_payment_cards_number
+
+        - addForeignKeyConstraint:
+            baseTableName: payment_cards
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_payment_cards_user_id
+
+        - createIndex:
+            tableName: payment_cards
+            indexName: idx_payment_cards_user_id
+            columns:
+              - column: {name: user_id}
+        - createIndex:
+            tableName: users
+            indexName: idx_users_email
+            columns:
+              - column: {name: email}
+
