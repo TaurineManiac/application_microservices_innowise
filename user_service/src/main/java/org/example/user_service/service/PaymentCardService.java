@@ -11,6 +11,7 @@ import org.example.user_service.entity.PaymentCard;
 import org.example.user_service.entity.User;
 import org.example.user_service.mapper.PaymentCardMapper;
 import org.example.user_service.repository.PaymentCardRepository;
+import org.example.user_service.repository.UserRepository;
 import org.example.user_service.specification.PaymentCardSpecification;
 import org.example.user_service.util.CardNumberGenerator;
 import org.springframework.data.domain.Page;
@@ -29,14 +30,16 @@ import java.util.List;
 public class PaymentCardService {
 
     private final PaymentCardRepository paymentCardRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
+    private final CacheService cacheService;
     private final PaymentCardMapper paymentCardMapper;
 
     @Transactional
     public PaymentCardResponse createCard(String publicUserId, CreatePaymentCardRequest request) {
         log.info("Creating new card for user with publicId: {}", publicUserId);
 
-        User user = userService.getUserEntityByPublicId(publicUserId);
+        User user = userRepository.findByPublicId(publicUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicUserId));
 
         long cardCount = paymentCardRepository.countByUserId(user.getId());
         if (cardCount >= AppConstraint.MAX_CARDS_PER_USER.getValue()) {
@@ -56,12 +59,15 @@ public class PaymentCardService {
         card.setActive(true);
 
         PaymentCard saved = paymentCardRepository.save(card);
+
+        cacheService.evictUserCache(publicUserId);
+
         log.info("Card created successfully with id: {}", saved.getId());
         return paymentCardMapper.toResponse(saved);
     }
 
     @Transactional
-    public void updateCardsHolderForUser(Long userId, String newHolder) {
+    public void updateCardsHolderForUser(Long userId,  String publicId,  String newHolder) {
         log.info("Updating holder name for all cards of userId: {}", userId);
         List<PaymentCard> cards = paymentCardRepository.findAllByUser_Id(userId);
         if (cards.isEmpty()) {
@@ -72,7 +78,11 @@ public class PaymentCardService {
         for (PaymentCard card : cards) {
             card.setHolder(newHolder);
         }
+
         paymentCardRepository.saveAll(cards);
+
+        cacheService.evictUserCache(publicId);
+
         log.info("Updated {} cards to new holder: {}", cards.size(), newHolder);
     }
 
@@ -85,6 +95,9 @@ public class PaymentCardService {
 
         paymentCardMapper.updateEntity(request, card);
         PaymentCard updated = paymentCardRepository.save(card);
+
+        cacheService.evictUserCache(updated.getUser().getPublicId());
+
         return paymentCardMapper.toResponse(updated);
     }
 
@@ -96,7 +109,9 @@ public class PaymentCardService {
             Boolean active,
             Pageable pageable) {
 
-        userService.getUserEntityByPublicId(publicUserId);
+        if (!userRepository.existsByPublicId(publicUserId)) {
+            throw new EntityNotFoundException("User not found with publicId: " + publicUserId);
+        }
 
         Specification<PaymentCard> spec = Specification
                 .where(PaymentCardSpecification.hasNumber(number))
@@ -120,6 +135,7 @@ public class PaymentCardService {
                 .orElseThrow(() -> new EntityNotFoundException("Card not found with id: " + cardId));
         card.setActive(true);
         paymentCardRepository.save(card);
+        cacheService.evictUserCache(card.getUser().getPublicId());
         log.info("Card activated successfully: {}", cardId);
     }
 
@@ -129,6 +145,7 @@ public class PaymentCardService {
                 .orElseThrow(() -> new EntityNotFoundException("Card not found with id: " + cardId));
         card.setActive(false);
         paymentCardRepository.save(card);
+        cacheService.evictUserCache(card.getUser().getPublicId());
         log.info("Card deactivated successfully: {}", cardId);
     }
 

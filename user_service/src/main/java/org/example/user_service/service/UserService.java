@@ -12,6 +12,8 @@ import org.example.user_service.exception.EntityNotFoundException;
 import org.example.user_service.mapper.UserMapper;
 import org.example.user_service.repository.UserRepository;
 import org.example.user_service.specification.UserSpecification;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -55,7 +57,9 @@ public class UserService {
         return userMapper.toUserResponse(savedUser);
     }
 
-    public UserResponse getUserByPublicId(String publicId) {
+    @Cacheable(value = "users", key = "#publicId")
+    @Transactional(readOnly = true)
+    public UserResponse getUserResponseByPublicId(String publicId) {
         User user = userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return userMapper.toUserResponse(user);
@@ -82,6 +86,7 @@ public class UserService {
                 .map(userMapper::toUserResponse);
     }
 
+    @CacheEvict(value = "users", key = "#publicId")
     @Transactional
     public UserResponse updateUser(String publicId, UpdateUserRequest request) {
         log.info("Updating user with publicId: {}", publicId);
@@ -106,7 +111,7 @@ public class UserService {
         if (nameChanged) {
             String newFullName = user.getName() + " " + user.getSurname();
             log.info("User name changed. Propagating new holder name '{}' to all cards.", newFullName);
-            paymentCardService.updateCardsHolderForUser(user.getId(), newFullName);
+            paymentCardService.updateCardsHolderForUser(user.getId(), user.getPublicId(), newFullName);
         }
 
         User updated = userRepository.save(user);
@@ -122,6 +127,7 @@ public class UserService {
 //        userRepository.delete(user);
 //    }
 
+    @CacheEvict(value = "users", key = "#publicId")
     @Transactional
     public void deactivateUser(String publicId) {
         log.info("Deactivating user with publicId: {}", publicId);
@@ -134,6 +140,7 @@ public class UserService {
 
 
 
+    @CacheEvict(value = "users", key = "#publicId")
     @Transactional
     public void activateUser(String publicId) {
         log.info("Activating user with publicId: {}", publicId);
@@ -144,10 +151,12 @@ public class UserService {
         log.info("User activated successfully: {}", publicId);
     }
 
+
     @Transactional(readOnly = true)
     public User getUserEntityByPublicId(String publicId) {
         return userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
     }
+
 
 }
