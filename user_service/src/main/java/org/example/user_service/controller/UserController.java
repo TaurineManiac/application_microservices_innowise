@@ -35,7 +35,7 @@ public class UserController {
     @GetMapping("/{publicId}")
     public ResponseEntity<UserResponse> getUserByPublicId(@PathVariable String publicId) {
         log.info("REST request to get user by publicId: {}", publicId);
-        UserResponse response = userService.getUserByPublicId(publicId);
+        UserResponse response = userService.getUserResponseByPublicId(publicId);
         return ResponseEntity.ok(response);
     }
 
