@@ -55,7 +55,7 @@ jobs:
           if [ -n "$SONAR_TOKEN" ]; then
             mvn sonar:sonar \
               -Dsonar.projectKey=taurinemaniac \
-              -Dsonar.organization=TaurineManiac \
+              -Dsonar.organization=taurinemaniac \
               -Dsonar.host.url=$SONAR_HOST_URL \
               -Dsonar.login=$SONAR_TOKEN
           else
