@@ -17,9 +17,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class UpdateUserRequest {
 
-    @NotBlank(message = "Public id required")
-    private String publicId;
-
     private String name;
 
     private String surname;
