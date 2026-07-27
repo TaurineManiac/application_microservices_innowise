@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changeset/v2-add-constraints-and-indexes.yaml
   - include:
       file: db/changelog/changeset/v3-add-public-id-to-users-table-and-same-index.yaml
+  - include:
+      file: db/changelog/changeset/v4-migrate-public-id-to-uuid.yaml
