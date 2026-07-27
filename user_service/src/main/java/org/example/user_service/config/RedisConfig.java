@@ -1,7 +1,5 @@
 package org.example.user_service.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,12 +16,11 @@ import java.time.Duration;
 @EnableCaching
 public class RedisConfig {
 
-    @Bean //that heap of new data is terrible :_)
-    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-
+    @Bean
+    public RedisCacheConfiguration redisCacheConfiguration() {
         GenericJacksonJsonRedisSerializer serializer = GenericJacksonJsonRedisSerializer.builder().build();
 
-        RedisCacheConfiguration config = RedisCacheConfiguration
+        return RedisCacheConfiguration
                 .defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
                 .serializeKeysWith(
@@ -33,9 +30,13 @@ public class RedisConfig {
                         RedisSerializationContext.SerializationPair.fromSerializer(serializer)
                 )
                 .disableCachingNullValues();
+    }
+
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory, RedisCacheConfiguration redisCacheConfiguration) {
 
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
+                .cacheDefaults(redisCacheConfiguration)
                 .build();
     }
 }
