@@ -17,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,8 +49,9 @@ public class UserRepositoryIntegrationTest {
 
     @Test
     void shouldSaveAndFindUser() {
+        UUID publicId = UUID.randomUUID();
         User user = User.builder()
-                .publicId("pub-123")
+                .publicId(publicId)
                 .name("John")
                 .surname("Doe")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
@@ -59,7 +61,7 @@ public class UserRepositoryIntegrationTest {
 
         userRepository.save(user);
 
-        User found = userRepository.findByPublicId("pub-123").orElse(null);
+        User found = userRepository.findByPublicId(publicId).orElse(null);
         assertThat(found).isNotNull();
         assertThat(found.getName()).isEqualTo("John");
     }
@@ -67,7 +69,7 @@ public class UserRepositoryIntegrationTest {
     @Test
     void shouldFindByEmail() {
         User user = User.builder()
-                .publicId("pub-456")
+                .publicId(UUID.randomUUID())
                 .name("Jane")
                 .surname("Smith")
                 .dateOfBirth(LocalDate.of(1995, 5, 5))
@@ -85,7 +87,7 @@ public class UserRepositoryIntegrationTest {
     @Test
     void shouldFindBySpecification() {
         User user1 = User.builder()
-                .publicId("pub-1")
+                .publicId(UUID.randomUUID())
                 .name("Alice")
                 .surname("Brown")
                 .dateOfBirth(LocalDate.of(1992, 2, 2))
@@ -94,7 +96,7 @@ public class UserRepositoryIntegrationTest {
                 .build();
 
         User user2 = User.builder()
-                .publicId("pub-2")
+                .publicId(UUID.randomUUID())
                 .name("Bob")
                 .surname("Brown")
                 .dateOfBirth(LocalDate.of(1988, 8, 8))

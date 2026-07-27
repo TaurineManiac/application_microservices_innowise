@@ -26,6 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -63,7 +64,7 @@ class PaymentCardControllerIntegrationTest {
     private UserRepository userRepository;
 
     private MockMvc mockMvc;
-    private String userPublicId;
+    private UUID userPublicId;
 
     @BeforeEach
     void setUp() throws Exception {

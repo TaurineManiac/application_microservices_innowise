@@ -24,6 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -99,11 +100,11 @@ class UserControllerIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         UserResponse created = objectMapper.readValue(response, UserResponse.class);
-        String publicId = created.getPublicId();
+        UUID publicId = created.getPublicId();
 
         mockMvc.perform(get("/api/v1/users/{publicId}", publicId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.publicId").value(publicId))
+                .andExpect(jsonPath("$.publicId").value(publicId.toString()))
                 .andExpect(jsonPath("$.email").value("integration@test.com"));
     }
 
@@ -117,7 +118,7 @@ class UserControllerIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         UserResponse created = objectMapper.readValue(response, UserResponse.class);
-        String publicId = created.getPublicId();
+        UUID publicId = created.getPublicId();
 
         UpdateUserRequest updateRequest = UpdateUserRequest.builder()
                 .name("Updated")
@@ -146,7 +147,7 @@ class UserControllerIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         UserResponse created = objectMapper.readValue(response, UserResponse.class);
-        String publicId = created.getPublicId();
+        UUID publicId = created.getPublicId();
 
         mockMvc.perform(patch("/api/v1/users/{publicId}/deactivate", publicId))
                 .andExpect(status().isNoContent());
@@ -172,7 +173,7 @@ class UserControllerIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         UserResponse created = objectMapper.readValue(response, UserResponse.class);
-        String publicId = created.getPublicId();
+        UUID publicId = created.getPublicId();
 
         mockMvc.perform(patch("/api/v1/users/{publicId}/deactivate", publicId))
                 .andExpect(status().isNoContent());

@@ -19,6 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +55,7 @@ public class PaymentCardRepositoryIntegrationTest {
         paymentCardRepository.deleteAll();
 
         user = User.builder()
-                .publicId("user-1")
+                .publicId(UUID.randomUUID())
                 .name("Card")
                 .surname("Holder")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))

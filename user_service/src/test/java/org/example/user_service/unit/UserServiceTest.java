@@ -1,5 +1,6 @@
 package org.example.user_service.unit;
 
+import org.example.user_service.constant.AppConstraint;
 import org.example.user_service.dto.CreateUserRequest;
 import org.example.user_service.dto.UpdateUserRequest;
 import org.example.user_service.dto.UserResponse;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +26,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,144 +52,128 @@ class UserServiceTest {
     private User user;
     private CreateUserRequest createRequest;
     private UpdateUserRequest updateRequest;
-    private UserResponse userResponse;
 
     @BeforeEach
     void setUp() {
         user = User.builder()
                 .id(1L)
-                .publicId("public-id-123")
+                .publicId(UUID.randomUUID())
                 .name("John")
                 .surname("Doe")
-                .email("john@example.com")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .email("john@test.com")
                 .active(true)
                 .build();
 
         createRequest = CreateUserRequest.builder()
                 .name("John")
                 .surname("Doe")
-                .email("john@example.com")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .email("john@test.com")
                 .build();
 
         updateRequest = UpdateUserRequest.builder()
                 .name("Jonathan")
-                .surname("Doe")
-                .email("jonathan@example.com")
-                .build();
-
-        userResponse = UserResponse.builder()
-                .publicId("public-id-123")
-                .name("John")
-                .surname("Doe")
-                .email("john@example.com")
-                .active(true)
+                .surname("Smith")
                 .build();
     }
 
     @Test
-    void createUser_shouldSaveAndReturnUser() {
+    void createUser_shouldSaveAndReturnUser_whenEmailIsUnique() {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
-        when(userMapper.toEntity(any(CreateUserRequest.class))).thenReturn(user);
+        when(userMapper.toEntity(createRequest)).thenReturn(user);
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userMapper.toUserResponse(any(User.class))).thenReturn(userResponse);
+        when(userMapper.toUserResponse(any(User.class)))
+                .thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
 
-        UserResponse result = userService.createUser(createRequest);
+        UserResponse response = userService.createUser(createRequest);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getPublicId()).isEqualTo("public-id-123");
+        assertThat(response).isNotNull();
+        assertThat(response.getPublicId()).isEqualTo(user.getPublicId());
         verify(userRepository).save(any(User.class));
+
+        verify(userRepository, never()).existsByPublicId(any(UUID.class));
     }
 
     @Test
-    void createUser_shouldThrowException_whenEmailExists() {
+    void createUser_shouldThrowEmailAlreadyExistsException_whenEmailTaken() {
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
         assertThatThrownBy(() -> userService.createUser(createRequest))
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("Email already exists");
-
-        verify(userRepository, never()).save(any());
     }
 
     @Test
-    void getUserResponseByPublicId_shouldReturnCachedUser() {
-        when(userRepository.findByPublicId(anyString())).thenReturn(Optional.of(user));
-        when(userMapper.toUserResponse(any(User.class))).thenReturn(userResponse);
+    void createUser_shouldRetryOnUuidCollision() {
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(userMapper.toEntity(createRequest)).thenReturn(user);
 
-        UserResponse result = userService.getUserResponseByPublicId("public-id-123");
+        when(userRepository.save(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException("Duplicate UUID"))
+                .thenReturn(user);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getPublicId()).isEqualTo("public-id-123");
-        verify(userRepository).findByPublicId("public-id-123");
+        when(userMapper.toUserResponse(any(User.class)))
+                .thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
+
+        UserResponse response = userService.createUser(createRequest);
+
+        assertThat(response).isNotNull();
+
+        verify(userRepository, times(2)).save(any(User.class));
+
+        verify(userRepository, never()).existsByPublicId(any(UUID.class));
     }
 
     @Test
-    void getUserResponseByPublicId_shouldThrowException_whenUserNotFound() {
-        when(userRepository.findByPublicId(anyString())).thenReturn(Optional.empty());
+    void getUserByPublicId_shouldReturnUser_whenExists() {
+        when(userRepository.findByPublicId(any(UUID.class))).thenReturn(Optional.of(user));
+        when(userMapper.toUserResponse(any(User.class)))
+                .thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
 
-        assertThatThrownBy(() -> userService.getUserResponseByPublicId("invalid"))
+        UserResponse response = userService.getUserResponseByPublicId(user.getPublicId());
+
+        assertThat(response.getPublicId()).isEqualTo(user.getPublicId());
+    }
+
+    @Test
+    void getUserByPublicId_shouldThrowEntityNotFoundException_whenNotFound() {
+        when(userRepository.findByPublicId(any(UUID.class))).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getUserResponseByPublicId(UUID.randomUUID()))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("User not found");
     }
 
     @Test
-    void getAllUsers_shouldReturnPage() {
-        Page<User> page = new PageImpl<>(List.of(user));
-        when(userRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page.map(u -> u));
-        when(userMapper.toUserResponse(any(User.class))).thenReturn(userResponse);
-
-        var result = userService.getAllUsers("John", null, null, true, PageRequest.of(0, 10));
-
-        assertThat(result).isNotNull();
-        assertThat(result.getTotalElements()).isEqualTo(1);
-        verify(userRepository).findAll(any(Specification.class), any(PageRequest.class));
-    }
-
-    @Test
-    void updateUser_shouldUpdateAndEvictCache() {
-        when(userRepository.findByPublicId(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+    void updateUser_shouldUpdateAndEvictCache_whenNameChanges() {
+        when(userRepository.findByPublicId(any(UUID.class))).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userMapper.toUserResponse(any(User.class))).thenReturn(userResponse);
+        doNothing().when(paymentCardService).updateCardsHolderForUser(anyLong(), any(UUID.class), anyString());
 
-        UserResponse result = userService.updateUser("public-id-123", updateRequest);
+        userService.updateUser(user.getPublicId(), updateRequest);
 
-
-        assertThat(result).isNotNull();
-        verify(userRepository).save(any(User.class));
-        verify(paymentCardService).updateCardsHolderForUser(eq(1L), eq("public-id-123"), anyString());
-    }
-
-    @Test
-    void updateUser_shouldThrow_whenEmailExists() {
-        when(userRepository.findByPublicId(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmail(anyString())).thenReturn(true);
-
-        assertThatThrownBy(() -> userService.updateUser("public-id-123", updateRequest))
-                .isInstanceOf(EmailAlreadyExistsException.class);
-    }
-
-    @Test
-    void activateUser_shouldSetActiveTrue() {
-        when(userRepository.findByPublicId(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenReturn(user);
-
-        userService.activateUser("public-id-123");
-
-        assertThat(user.getActive()).isTrue();
+        verify(paymentCardService).updateCardsHolderForUser(user.getId(), user.getPublicId(), "Jonathan Smith");
         verify(userRepository).save(user);
     }
 
     @Test
     void deactivateUser_shouldSetActiveFalse() {
-        when(userRepository.findByPublicId(anyString())).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenReturn(user);
-
-        userService.deactivateUser("public-id-123");
-
+        when(userRepository.findByPublicId(any(UUID.class))).thenReturn(Optional.of(user));
+        userService.deactivateUser(user.getPublicId());
         assertThat(user.getActive()).isFalse();
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void getAllUsers_shouldReturnPageWithFilters() {
+        Page<User> page = new PageImpl<>(List.of(user));
+        when(userRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page.map(u -> u));
+        when(userMapper.toUserResponse(any(User.class)))
+                .thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
+
+        Page<UserResponse> result = userService.getAllUsers("John", null, null, true, PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
     }
 }

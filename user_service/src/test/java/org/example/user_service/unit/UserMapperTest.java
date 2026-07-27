@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,9 +19,10 @@ class UserMapperTest {
 
     @Test
     void shouldMapEntityToResponse() {
+        UUID publicId = UUID.randomUUID();
         User user = User.builder()
                 .id(1L)
-                .publicId("pub-123")
+                .publicId(publicId)
                 .name("John")
                 .surname("Doe")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
@@ -33,7 +35,7 @@ class UserMapperTest {
         UserResponse response = mapper.toUserResponse(user);
 
         assertThat(response).isNotNull();
-        assertThat(response.getPublicId()).isEqualTo("pub-123");
+        assertThat(response.getPublicId()).isEqualTo(publicId);
         assertThat(response.getName()).isEqualTo("John");
     }
 

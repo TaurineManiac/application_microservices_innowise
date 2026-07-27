@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
+import java.util.UUID;
+
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,10 +27,11 @@ class CacheServiceTest {
 
     @Test
     void evictUserCache_shouldCallEvict() {
+        UUID publicId = UUID.randomUUID();
         when(cacheManager.getCache("users")).thenReturn(cache);
 
-        cacheService.evictUserCache("public-123");
+        cacheService.evictUserCache(publicId);
 
-        verify(cache).evict("public-123");
+        verify(cache).evict(publicId);
     }
 }
