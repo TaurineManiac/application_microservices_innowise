@@ -11,6 +11,7 @@ databaseChangeLog:
                   type: VARCHAR(255)
                   constraints:
                     unique: true
+                    uniqueConstraintName: uk_users_public_id
                     nullable: false
         - createIndex:
             tableName: users
