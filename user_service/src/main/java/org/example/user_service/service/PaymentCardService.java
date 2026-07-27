@@ -9,11 +9,13 @@ import org.example.user_service.dto.PaymentCardResponse;
 import org.example.user_service.dto.UpdateCardRequest;
 import org.example.user_service.entity.PaymentCard;
 import org.example.user_service.entity.User;
+import org.example.user_service.exception.GenerationException;
 import org.example.user_service.mapper.PaymentCardMapper;
 import org.example.user_service.repository.PaymentCardRepository;
 import org.example.user_service.repository.UserRepository;
 import org.example.user_service.specification.PaymentCardSpecification;
 import org.example.user_service.util.CardNumberGenerator;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +38,7 @@ public class PaymentCardService {
     private final PaymentCardMapper paymentCardMapper;
 
     @Transactional
-    public PaymentCardResponse createCard(String publicUserId, CreatePaymentCardRequest request) {
+    public PaymentCardResponse createCard(UUID publicUserId, CreatePaymentCardRequest request) {
         log.info("Creating new card for user with publicId: {}", publicUserId);
 
         User user = userRepository.findByPublicId(publicUserId)
@@ -46,28 +49,42 @@ public class PaymentCardService {
             throw new IllegalStateException("User already has " + AppConstraint.MAX_CARDS_PER_USER.getValue() + " cards. Maximum limit reached.");
         }
 
-        String generatedNumber = generateUniqueCardNumber();
-
         int expiryYears = AppConstraint.CARD_EXPIRY_YEARS.getValue();
         LocalDate expirationDate = LocalDate.now()
                 .plusYears(expiryYears)
                 .withDayOfMonth(YearMonth.from(LocalDate.now().plusYears(expiryYears)).lengthOfMonth());
 
-        PaymentCard card = paymentCardMapper.toEntity(request, user);
-        card.setNumber(generatedNumber);
-        card.setExpirationDate(expirationDate);
-        card.setActive(true);
+        int maxRetries = AppConstraint.MAX_RETRIES_FOR_CARD_NUMBER.getValue();
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
 
-        PaymentCard saved = paymentCardRepository.save(card);
+                String generatedNumber = CardNumberGenerator.generateRandomCardNumber();
 
-        cacheService.evictUserCache(publicUserId);
+                PaymentCard card = paymentCardMapper.toEntity(request, user);
+                card.setNumber(generatedNumber);
+                card.setExpirationDate(expirationDate);
+                card.setActive(true);
 
-        log.info("Card created successfully with id: {}", saved.getId());
-        return paymentCardMapper.toResponse(saved);
+                PaymentCard saved = paymentCardRepository.save(card);
+                cacheService.evictUserCache(publicUserId);
+
+                log.info("Card created successfully with id: {} (attempt {})", saved.getId(), attempt);
+                return paymentCardMapper.toResponse(saved);
+
+            } catch (DataIntegrityViolationException ex) {
+                log.warn("Card number collision on attempt {}/{}, retrying...", attempt, maxRetries);
+
+                if (attempt == maxRetries) {
+                    log.error("Failed to generate unique card number after {} attempts", maxRetries);
+                    throw new GenerationException("Failed to generate unique card number. Please try again later.");
+                }
+            }
+        }
+        throw new GenerationException("Failed to generate unique card number. Please try again later.");
     }
 
     @Transactional
-    public void updateCardsHolderForUser(Long userId,  String publicId,  String newHolder) {
+    public void updateCardsHolderForUser(Long userId, UUID publicId, String newHolder) {
         log.info("Updating holder name for all cards of userId: {}", userId);
         List<PaymentCard> cards = paymentCardRepository.findAllByUser_Id(userId);
         if (cards.isEmpty()) {
@@ -103,7 +120,7 @@ public class PaymentCardService {
 
     @Transactional(readOnly = true)
     public Page<PaymentCardResponse> getCardsByUser(
-            String publicUserId,
+            UUID publicUserId,
             String number,
             String holder,
             Boolean active,
@@ -160,18 +177,6 @@ public class PaymentCardService {
         log.info("Card deleted successfully: {}", cardId);
     }
     */
-
-    private String generateUniqueCardNumber() {
-        int maxRetries = AppConstraint.MAX_RETRIES_FOR_CARD_NUMBER.getValue();
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
-            String candidate = CardNumberGenerator.generateRandomCardNumber();
-            if (!paymentCardRepository.existsByNumber(candidate)) {
-                return candidate;
-            }
-            log.debug("Card number collision on attempt {}/{}", attempt, maxRetries);
-        }
-        throw new IllegalStateException("Failed to generate a unique card number after " + maxRetries + " attempts.");
-    }
 
     @Transactional(readOnly = true)
     public String getFullCardNumber(Long cardId) {

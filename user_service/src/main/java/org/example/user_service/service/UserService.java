@@ -9,11 +9,13 @@ import org.example.user_service.dto.UserResponse;
 import org.example.user_service.entity.User;
 import org.example.user_service.exception.EmailAlreadyExistsException;
 import org.example.user_service.exception.EntityNotFoundException;
+import org.example.user_service.exception.GenerationException;
 import org.example.user_service.mapper.UserMapper;
 import org.example.user_service.repository.UserRepository;
 import org.example.user_service.specification.UserSpecification;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,26 +42,31 @@ public class UserService {
         User user = userMapper.toEntity(createUserRequest);
         user.setActive(true);
 
-        String uuid = UUID.randomUUID().toString();
-        AtomicInteger counter = new AtomicInteger();
-        while (userRepository.existsByPublicId(uuid)){
-            uuid = UUID.randomUUID().toString();
-            counter.incrementAndGet();
-            if(counter.get() >= AppConstraint.MAX_RETRIES_FOR_PUBLIC_ID.getValue()){
-                throw new RuntimeException("Something went wrong");
+        for(int i =0; i < AppConstraint.MAX_RETRIES_FOR_PUBLIC_ID.getValue(); i++){
+            try{
+                user.setPublicId(UUID.randomUUID());
+
+                User savedUser = userRepository.save(user);
+
+                log.info("User created successfully with publicId: {} (attempt {})",
+                        savedUser.getPublicId(), i+1);
+                return userMapper.toUserResponse(savedUser);
+            }
+            catch (DataIntegrityViolationException ex){
+                log.warn("UUID collision on attempt {}/{}, retrying...", i, AppConstraint.MAX_RETRIES_FOR_PUBLIC_ID.getValue());
+
+                if (i == AppConstraint.MAX_RETRIES_FOR_PUBLIC_ID.getValue()-1) {
+                    log.error("Failed to generate unique UUID after {} attempts", AppConstraint.MAX_RETRIES_FOR_PUBLIC_ID.getValue());
+                    throw new GenerationException("Something went wrong, retry again later.");
+                }
             }
         }
-
-        user.setPublicId(uuid);
-        User savedUser = userRepository.save(user);
-
-        log.info("User created successfully with publicId: {}", savedUser.getPublicId());
-        return userMapper.toUserResponse(savedUser);
+        throw new GenerationException("Something went wrong, retry again later.");
     }
 
     @Cacheable(value = "users", key = "#publicId")
     @Transactional(readOnly = true)
-    public UserResponse getUserResponseByPublicId(String publicId) {
+    public UserResponse getUserResponseByPublicId(UUID publicId) {
         User user = userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return userMapper.toUserResponse(user);
@@ -88,7 +95,7 @@ public class UserService {
 
     @CacheEvict(value = "users", key = "#publicId")
     @Transactional
-    public UserResponse updateUser(String publicId, UpdateUserRequest request) {
+    public UserResponse updateUser(UUID publicId, UpdateUserRequest request) {
         log.info("Updating user with publicId: {}", publicId);
 
         User user = userRepository.findByPublicId(publicId)
@@ -129,7 +136,8 @@ public class UserService {
 
     @CacheEvict(value = "users", key = "#publicId")
     @Transactional
-    public void deactivateUser(String publicId) {
+    public void deactivateUser(UUID publicId) {
+
         log.info("Deactivating user with publicId: {}", publicId);
         User user = userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
@@ -142,7 +150,7 @@ public class UserService {
 
     @CacheEvict(value = "users", key = "#publicId")
     @Transactional
-    public void activateUser(String publicId) {
+    public void activateUser(UUID publicId) {
         log.info("Activating user with publicId: {}", publicId);
         User user = userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
@@ -153,7 +161,7 @@ public class UserService {
 
 
     @Transactional(readOnly = true)
-    public User getUserEntityByPublicId(String publicId) {
+    public User getUserEntityByPublicId(UUID publicId) {
         return userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
     }
