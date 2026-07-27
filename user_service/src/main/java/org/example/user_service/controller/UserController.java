@@ -40,7 +40,6 @@ public class UserController {
     }
 
 
-    // /api/v1/users?name=John&surname=Doe&active=true&page=0&size=20
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(required = false) String name,
@@ -73,9 +72,7 @@ public class UserController {
     public ResponseEntity<Void> activateUser(@PathVariable String publicId) {
         log.info("REST request to activate user with publicId: {}", publicId);
         userService.activateUser(publicId);
-        return ResponseEntity.noContent().build(); // 204 No Content because User alreay know that User the class exists
-                                                  //and User don't really needed to see full new User the class, he needs
-                                                    // only info that operation succesfully completed
+        return ResponseEntity.noContent().build();
     }
 
 
