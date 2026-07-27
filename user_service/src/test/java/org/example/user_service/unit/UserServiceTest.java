@@ -14,6 +14,7 @@ import org.example.user_service.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -81,17 +82,22 @@ class UserServiceTest {
     @Test
     void createUser_shouldSaveAndReturnUser_whenEmailIsUnique() {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userMapper.toEntity(createRequest)).thenReturn(user);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(userMapper.toUserResponse(any(User.class)))
-                .thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
+        when(userMapper.toUserResponse(any(User.class))).thenAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            return UserResponse.builder()
+                    .publicId(u.getPublicId())
+                    .email(u.getEmail())
+                    .build();
+        });
 
         UserResponse response = userService.createUser(createRequest);
 
         assertThat(response).isNotNull();
-        assertThat(response.getPublicId()).isEqualTo(user.getPublicId());
+        assertThat(response.getPublicId()).isNotNull();
+        assertThat(response.getEmail()).isEqualTo("john@test.com");
         verify(userRepository).save(any(User.class));
-
         verify(userRepository, never()).existsByPublicId(any(UUID.class));
     }
 
@@ -108,20 +114,19 @@ class UserServiceTest {
     void createUser_shouldRetryOnUuidCollision() {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userMapper.toEntity(createRequest)).thenReturn(user);
-
         when(userRepository.save(any(User.class)))
                 .thenThrow(new DataIntegrityViolationException("Duplicate UUID"))
-                .thenReturn(user);
-
-        when(userMapper.toUserResponse(any(User.class)))
-                .thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(userMapper.toUserResponse(any(User.class))).thenAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            return UserResponse.builder().publicId(u.getPublicId()).build();
+        });
 
         UserResponse response = userService.createUser(createRequest);
 
         assertThat(response).isNotNull();
-
+        assertThat(response.getPublicId()).isNotNull();
         verify(userRepository, times(2)).save(any(User.class));
-
         verify(userRepository, never()).existsByPublicId(any(UUID.class));
     }
 
@@ -148,12 +153,21 @@ class UserServiceTest {
     @Test
     void updateUser_shouldUpdateAndEvictCache_whenNameChanges() {
         when(userRepository.findByPublicId(any(UUID.class))).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        doNothing().when(paymentCardService).updateCardsHolderForUser(anyLong(), any(UUID.class), anyString());
+        doAnswer(invocation -> {
+            UpdateUserRequest req = invocation.getArgument(0);
+            User u = invocation.getArgument(1);
+            if (req.getName() != null) u.setName(req.getName());
+            if (req.getSurname() != null) u.setSurname(req.getSurname());
+            return null;
+        }).when(userMapper).updateEntity(any(UpdateUserRequest.class), any(User.class));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userMapper.toUserResponse(any(User.class))).thenReturn(UserResponse.builder().publicId(user.getPublicId()).build());
 
         userService.updateUser(user.getPublicId(), updateRequest);
 
-        verify(paymentCardService).updateCardsHolderForUser(user.getId(), user.getPublicId(), "Jonathan Smith");
+        ArgumentCaptor<String> nameCaptor = ArgumentCaptor.forClass(String.class);
+        verify(paymentCardService).updateCardsHolderForUser(eq(1L), eq(user.getPublicId()), nameCaptor.capture());
+        assertThat(nameCaptor.getValue()).isEqualTo("Jonathan Smith");
         verify(userRepository).save(user);
     }
 
