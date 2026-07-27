@@ -34,7 +34,7 @@ public class PaymentCardController {
     }
 
 
-    // GET /api/v1/users/{publicUserId}/cards?number=4111&holder=John&active=true&page=0&size=10
+
     @GetMapping
     public ResponseEntity<Page<PaymentCardResponse>> getCardsByUser(
             @PathVariable String publicUserId,
@@ -57,8 +57,6 @@ public class PaymentCardController {
             @PathVariable Long cardId) {
 
         log.info("REST request to get card by id: {} for user: {}", cardId, publicUserId);
-        // Note: The service doesn't strictly need publicUserId to fetch the card,
-        // but keeping it in the URL is RESTful and allows us to add ownership validation in the future.
         PaymentCardResponse response = paymentCardService.getCardById(cardId);
         return ResponseEntity.ok(response);
     }
@@ -79,7 +77,7 @@ public class PaymentCardController {
 
         log.info("REST request to activate card with id: {} for user: {}", cardId, publicUserId);
         paymentCardService.activateCard(cardId);
-        return ResponseEntity.noContent().build(); //204 No Content
+        return ResponseEntity.noContent().build();
     }
 
 
