@@ -67,6 +67,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
+    @ExceptionHandler(GenerationException.class)
+    public ResponseEntity<ErrorResponse> handlePublicIdGeneration(GenerationException ex, WebRequest request) {
+        log.error("Generation failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
         log.error("Unexpected runtime error: ", ex);
