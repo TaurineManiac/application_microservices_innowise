@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 
 @Entity
@@ -41,5 +42,5 @@ public class User {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy ="user" , cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST,  CascadeType.REFRESH})
-    private List<PaymentCard> paymentCards;
+    private HashSet<PaymentCard> paymentCards;
 }
