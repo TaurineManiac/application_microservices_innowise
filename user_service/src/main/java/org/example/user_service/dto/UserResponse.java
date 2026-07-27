@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,8 +16,8 @@ import java.util.List;
 @Builder
 public class UserResponse {
     private Long id;
-    private String publicId;
     private String name;
+    private UUID publicId;
     private String surname;
     private LocalDate dateOfBirth;
     private String email;

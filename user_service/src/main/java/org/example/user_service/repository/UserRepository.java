@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
@@ -33,7 +34,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     boolean existsByEmail(@NotBlank(message = "Email is required") @Email(message = "Email must be valid") String email);
 
     @EntityGraph(attributePaths = {"paymentCards"})
-    Optional<User> findByPublicId(String publicId);
+    Optional<User> findByPublicId(UUID publicId);
 
-    boolean existsByPublicId(String uuid);
+    boolean existsByPublicId(UUID uuid);
 }

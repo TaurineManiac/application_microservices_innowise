@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -33,7 +35,7 @@ public class UserController {
 
 
     @GetMapping("/{publicId}")
-    public ResponseEntity<UserResponse> getUserByPublicId(@PathVariable String publicId) {
+    public ResponseEntity<UserResponse> getUserByPublicId(@PathVariable UUID publicId) {
         log.info("REST request to get user by publicId: {}", publicId);
         UserResponse response = userService.getUserResponseByPublicId(publicId);
         return ResponseEntity.ok(response);
@@ -59,7 +61,7 @@ public class UserController {
 
     @PutMapping("/{publicId}")
     public ResponseEntity<UserResponse> updateUser(
-            @PathVariable String publicId,
+            @PathVariable UUID publicId,
             @Valid @RequestBody UpdateUserRequest request) {
 
         log.info("REST request to update user with publicId: {}", publicId);
@@ -69,7 +71,7 @@ public class UserController {
 
 
     @PatchMapping("/{publicId}/activate")
-    public ResponseEntity<Void> activateUser(@PathVariable String publicId) {
+    public ResponseEntity<Void> activateUser(@PathVariable UUID publicId) {
         log.info("REST request to activate user with publicId: {}", publicId);
         userService.activateUser(publicId);
         return ResponseEntity.noContent().build();
@@ -78,7 +80,7 @@ public class UserController {
 
 
     @PatchMapping("/{publicId}/deactivate")
-    public ResponseEntity<Void> deactivateUser(@PathVariable String publicId) {
+    public ResponseEntity<Void> deactivateUser(@PathVariable UUID publicId) {
         log.info("REST request to deactivate user with publicId: {}", publicId);
         userService.deactivateUser(publicId);
         return ResponseEntity.noContent().build();

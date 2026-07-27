@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/users/{publicUserId}/cards")
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ public class PaymentCardController {
 
     @PostMapping
     public ResponseEntity<PaymentCardResponse> createCard(
-            @PathVariable String publicUserId,
+            @PathVariable UUID publicUserId,
             @Valid @RequestBody CreatePaymentCardRequest request) {
 
         log.info("REST request to create card for user with publicId: {}", publicUserId);
@@ -37,7 +39,7 @@ public class PaymentCardController {
 
     @GetMapping
     public ResponseEntity<Page<PaymentCardResponse>> getCardsByUser(
-            @PathVariable String publicUserId,
+            @PathVariable UUID publicUserId,
             @RequestParam(required = false) String number,
             @RequestParam(required = false) String holder,
             @RequestParam(required = false) Boolean active,
@@ -53,7 +55,7 @@ public class PaymentCardController {
 
     @GetMapping("/{cardId}")
     public ResponseEntity<PaymentCardResponse> getCardById(
-            @PathVariable String publicUserId,
+            @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {
 
         log.info("REST request to get card by id: {} for user: {}", cardId, publicUserId);
@@ -62,7 +64,7 @@ public class PaymentCardController {
     }
     @PutMapping("/{cardId}")
     public ResponseEntity<PaymentCardResponse> updateCard(
-            @PathVariable String publicUserId,
+            @PathVariable UUID publicUserId,
             @PathVariable Long cardId,
             @Valid @RequestBody UpdateCardRequest request) {
 
@@ -72,7 +74,7 @@ public class PaymentCardController {
     }
     @PatchMapping("/{cardId}/activate")
     public ResponseEntity<Void> activateCard(
-            @PathVariable String publicUserId,
+            @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {
 
         log.info("REST request to activate card with id: {} for user: {}", cardId, publicUserId);
@@ -84,7 +86,7 @@ public class PaymentCardController {
 
     @PatchMapping("/{cardId}/deactivate")
     public ResponseEntity<Void> deactivateCard(
-            @PathVariable String publicUserId,
+            @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {
 
         log.info("REST request to deactivate card with id: {} for user: {}", cardId, publicUserId);
