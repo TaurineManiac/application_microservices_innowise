@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: Ignat
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: public_id
+                  type: VARCHAR(255)
+                  constraints:
+                    unique: true
+                    uniqueConstraintName: uk_users_public_id
+                    nullable: false
+        - createIndex:
+            tableName: users
+            indexName: idx_users_public_id
+            columns:
+              - column: { name: public_id }

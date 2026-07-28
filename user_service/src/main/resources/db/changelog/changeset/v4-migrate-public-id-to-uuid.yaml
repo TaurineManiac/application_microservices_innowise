@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: Ignat
+      changes:
+
+        - dropIndex:
+            tableName: users
+            indexName: idx_users_public_id
+
+        - dropUniqueConstraint:
+            tableName: users
+            constraintName: uk_users_public_id
+
+        - modifyDataType:
+            tableName: users
+            columnName: public_id
+            newDataType: UUID
+
+        - addUniqueConstraint:
+            tableName: users
+            columnNames: public_id
+            constraintName: uk_users_public_id
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_public_id
+            columns:
+              - column: { name: public_id }
