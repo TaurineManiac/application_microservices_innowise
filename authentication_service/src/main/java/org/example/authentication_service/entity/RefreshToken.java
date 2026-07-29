@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,7 +22,12 @@ public class RefreshToken {
     @JoinColumn(name = "credential_id", nullable = false)
     private Credential credential;
 
+    @Column(nullable = false,  unique = true)
     private String token;
 
+    @Column(nullable = false)
+    private LocalDateTime expiresAt;
+
+    private Boolean revoked;
 
 }
