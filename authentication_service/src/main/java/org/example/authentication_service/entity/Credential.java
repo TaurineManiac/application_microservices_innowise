@@ -1,6 +1,7 @@
 package org.example.authentication_service.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,7 +14,8 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.UUID;
 
-@Entity(name = "credentials")
+@Entity
+@Table(name = "credentials")
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -27,6 +29,7 @@ public class Credential {
     @Column(unique = true,  nullable = false)
     private UUID publicId;
 
+    @Email
     @Column(unique = true,  nullable = false)
     private String email;
 
@@ -43,4 +46,6 @@ public class Credential {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "credential", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST,  CascadeType.REFRESH})
+    private HashSet<RefreshToken> refreshTokens;
 }
