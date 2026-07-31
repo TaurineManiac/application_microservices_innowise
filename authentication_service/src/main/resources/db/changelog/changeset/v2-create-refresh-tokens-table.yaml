@@ -9,7 +9,7 @@ databaseChangeLog:
               - column: { name: id, type: BIGINT, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
               - column: { name: token, type: VARCHAR(255), constraints: { nullable: false } }
               - column: { name: credential_id, type: BIGINT, constraints: { nullable: false } }
-              - column: { name: expiry_date, type: TIMESTAMP, constraints: { nullable: false } }
+              - column: { name: expires_at, type: TIMESTAMP, constraints: { nullable: false } }
               - column: { name: revoked, type: BOOLEAN, defaultValueBoolean: false, constraints: { nullable: false } }
         - addUniqueConstraint:
             tableName: refresh_tokens
