@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class PaymentCardController {
     private final PaymentCardService paymentCardService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
     public ResponseEntity<PaymentCardResponse> createCard(
             @PathVariable UUID publicUserId,
             @Valid @RequestBody CreatePaymentCardRequest request) {
@@ -35,9 +37,8 @@ public class PaymentCardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-
-
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
     public ResponseEntity<Page<PaymentCardResponse>> getCardsByUser(
             @PathVariable UUID publicUserId,
             @RequestParam(required = false) String number,
@@ -54,6 +55,7 @@ public class PaymentCardController {
     }
 
     @GetMapping("/{cardId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentCardResponse> getCardById(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {
@@ -62,7 +64,9 @@ public class PaymentCardController {
         PaymentCardResponse response = paymentCardService.getCardById(cardId);
         return ResponseEntity.ok(response);
     }
+
     @PutMapping("/{cardId}")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
     public ResponseEntity<PaymentCardResponse> updateCard(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId,
@@ -72,7 +76,9 @@ public class PaymentCardController {
         PaymentCardResponse response = paymentCardService.updateCard(cardId, request);
         return ResponseEntity.ok(response);
     }
+
     @PatchMapping("/{cardId}/activate")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
     public ResponseEntity<Void> activateCard(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {
@@ -82,9 +88,8 @@ public class PaymentCardController {
         return ResponseEntity.noContent().build();
     }
 
-
-
     @PatchMapping("/{cardId}/deactivate")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
     public ResponseEntity<Void> deactivateCard(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {

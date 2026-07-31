@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -32,17 +33,16 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-
-
     @GetMapping("/{publicId}")
+    @PreAuthorize("hasRole('ADMIN') or #publicId.toString() == authentication.principal")
     public ResponseEntity<UserResponse> getUserByPublicId(@PathVariable UUID publicId) {
         log.info("REST request to get user by publicId: {}", publicId);
         UserResponse response = userService.getUserResponseByPublicId(publicId);
         return ResponseEntity.ok(response);
     }
 
-
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String surname,
@@ -57,9 +57,8 @@ public class UserController {
         return ResponseEntity.ok(page);
     }
 
-
-
     @PutMapping("/{publicId}")
+    @PreAuthorize("hasRole('ADMIN') or #publicId.toString() == authentication.principal")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID publicId,
             @Valid @RequestBody UpdateUserRequest request) {
@@ -69,17 +68,16 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-
     @PatchMapping("/{publicId}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> activateUser(@PathVariable UUID publicId) {
         log.info("REST request to activate user with publicId: {}", publicId);
         userService.activateUser(publicId);
         return ResponseEntity.noContent().build();
     }
 
-
-
     @PatchMapping("/{publicId}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deactivateUser(@PathVariable UUID publicId) {
         log.info("REST request to deactivate user with publicId: {}", publicId);
         userService.deactivateUser(publicId);
