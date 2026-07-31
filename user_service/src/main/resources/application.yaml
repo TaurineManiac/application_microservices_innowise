@@ -2,7 +2,9 @@ spring:
   application:
     name: user_service
 
-
+  auth:
+    service:
+      url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
   jpa:
     hibernate:
@@ -17,9 +19,6 @@ spring:
     change-log: classpath:db/changelog/changelog-master.yaml
     enabled: true
 
-
-    # for avoid messing comments here I wqas created notebook abt redis
-    # because this is my first time working with this technology 0_0
   data:
     redis:
       timeout: 2000ms
