@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.example.authentication_service.enums.Role;
+import org.example.authentication_service.exception.InvalidTokenException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -57,8 +58,13 @@ public class JwtService {
                 .getBody();
     }
 
-    public UUID extractPublicIdFromClaims(String token){
-        return UUID.fromString(extractAllClaims(token).getSubject());
+    public UUID extractPublicId(String token) {
+        String subject = extractAllClaims(token).getSubject();
+        try {
+            return UUID.fromString(subject);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTokenException("Invalid UUID in token subject: " + subject);
+        }
     }
 
     public String extractRole(String token){
