@@ -9,13 +9,16 @@ import lombok.NoArgsConstructor;
 import org.example.authentication_service.enums.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "credentials")
+@EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
@@ -37,7 +40,7 @@ public class Credential {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(unique = true,  nullable = false)
+    @Column(nullable = false)
     private Role role;
 
     @CreatedDate
@@ -46,6 +49,7 @@ public class Credential {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @Builder.Default
     @OneToMany(mappedBy = "credential", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST,  CascadeType.REFRESH})
-    private HashSet<RefreshToken> refreshTokens;
+    private Set<RefreshToken> refreshTokens = new HashSet<>();
 }
