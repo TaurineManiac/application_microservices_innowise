@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.authentication_service.dto.CreateUserRequest;
 import org.example.authentication_service.dto.UserResponse;
 import org.example.authentication_service.entity.Credential;
+import org.example.authentication_service.enums.Constraint;
 import org.example.authentication_service.enums.Role;
 import org.example.authentication_service.repository.CredentialRepository;
 import org.example.authentication_service.service.UserServiceClient;
@@ -44,32 +45,47 @@ public class AdminInitializer implements ApplicationRunner {
             return;
         }
 
-        try {
-            log.info("Creating admin user...");
+        int maxRetries = Constraint.MAX_RETRIES_TO_CHECK_ADMIN.getValue();
+        long retryDelayMs = Constraint.RETRY_DELAY_MS_TO_CHECK_ADMIN.getValue();
 
-            CreateUserRequest createUserRequest = CreateUserRequest.builder()
-                    .name(adminName)
-                    .surname(adminSurname)
-                    .dateOfBirth(LocalDate.of(1990, 1, 1))
-                    .email(adminEmail)
-                    .build();
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.info("Creating admin user (attempt {}/{})", attempt, maxRetries);
 
-            UserResponse userResponse = userServiceClient.createUser(createUserRequest);
-            log.info("Admin user created in User Service with publicId: {}", userResponse.getPublicId());
+                CreateUserRequest createUserRequest = CreateUserRequest.builder()
+                        .name(adminName)
+                        .surname(adminSurname)
+                        .dateOfBirth(LocalDate.of(1990, 1, 1))
+                        .email(adminEmail)
+                        .build();
 
-            Credential credential = Credential.builder()
-                    .publicId(userResponse.getPublicId())
-                    .email(adminEmail)
-                    .passwordHash(passwordEncoder.encode(adminPassword))
-                    .role(Role.ADMIN)
-                    .build();
+                UserResponse userResponse = userServiceClient.createUser(createUserRequest);
+                log.info("Admin user created in User Service with publicId: {}", userResponse.getPublicId());
 
-            credentialRepository.save(credential);
-            log.info("Admin credentials saved successfully.");
-            log.info("Admin email: {}, password: {}", adminEmail, adminPassword);
-        } catch (Exception e) {
-            log.error("Failed to bootstrap admin: {}", e.getMessage(), e);
-            // Не прерываем запуск, просто логируем ошибку. Админа можно будет создать позже вручную.
+                Credential credential = Credential.builder()
+                        .publicId(userResponse.getPublicId())
+                        .email(adminEmail)
+                        .passwordHash(passwordEncoder.encode(adminPassword))
+                        .role(Role.ADMIN)
+                        .build();
+
+                credentialRepository.save(credential);
+                log.info("Admin credentials saved successfully.");
+                log.info("Admin email: {}, password: {}", adminEmail, adminPassword);
+                return;
+
+            } catch (Exception e) {
+                log.warn("Failed to create admin on attempt {}/{}. Error: {}", attempt, maxRetries, e.getMessage());
+                if (attempt < maxRetries) {
+                    try {
+                        Thread.sleep(retryDelayMs);
+                    } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    log.error("Failed to bootstrap admin after {} attempts. You may need to create admin manually.", maxRetries, e);
+                }
+            }
         }
     }
 }
