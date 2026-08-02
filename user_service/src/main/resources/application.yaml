@@ -2,9 +2,6 @@ spring:
   application:
     name: user_service
 
-  auth:
-    service:
-      url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
   jpa:
     hibernate:
@@ -30,6 +27,9 @@ spring:
           max-wait: 5000ms
           time-between-eviction-runs: 60s
 
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
 ---
 spring:
   config:
