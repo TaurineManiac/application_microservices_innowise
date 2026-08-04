@@ -1,5 +1,6 @@
 package org.example.user_service.config;
 
+import org.example.user_service.constant.AppConstraint;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +31,7 @@ public class RedisConfig {
 
         return RedisCacheConfiguration
                 .defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(10))
+                .entryTtl(Duration.ofMinutes(AppConstraint.TIME_TO_LIVE_MINUTES_CACHE.getValue()))
                 .serializeKeysWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer())
                 )
