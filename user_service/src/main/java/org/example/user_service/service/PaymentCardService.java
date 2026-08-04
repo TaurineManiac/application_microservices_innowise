@@ -132,6 +132,7 @@ public class PaymentCardService {
 
         Specification<PaymentCard> spec = Specification
                 .where(PaymentCardSpecification.hasNumber(number))
+                .and(PaymentCardSpecification.belongsToUser(publicUserId))
                 .and(PaymentCardSpecification.hasHolder(holder))
                 .and(PaymentCardSpecification.isActive(active));
 
