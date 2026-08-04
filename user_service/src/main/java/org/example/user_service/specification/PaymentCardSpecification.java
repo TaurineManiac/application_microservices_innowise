@@ -3,6 +3,8 @@ package org.example.user_service.specification;
 import org.example.user_service.entity.PaymentCard;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.UUID;
+
 public class PaymentCardSpecification {
     public static Specification<PaymentCard> isActive(Boolean active) {
         return (root, query, criteriaBuilder) -> {
@@ -25,10 +27,10 @@ public class PaymentCardSpecification {
         });
     }
 
-    public static Specification<PaymentCard> belongsToUser (Long userId) {
+    public static Specification<PaymentCard> belongsToUser (UUID publicUserId) {
         return ((root, query, criteriaBuilder) ->  {
-            if(userId == null) return criteriaBuilder.conjunction();
-            return criteriaBuilder.equal(root.get("user").get("id"), userId);
+            if(publicUserId == null) return criteriaBuilder.conjunction();
+            return criteriaBuilder.equal(root.get("user").get("publicId"), publicUserId);
         });
     }
 
