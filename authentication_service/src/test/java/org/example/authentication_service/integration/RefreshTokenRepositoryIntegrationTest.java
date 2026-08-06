@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Transactional
 @Testcontainers
-public class RefreshTokenRepositoryIntegrationTest {
+public class RefreshTokenRepositoryIntegrationTest extends IntegrationTestBase {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
