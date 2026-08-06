@@ -24,4 +24,11 @@ user:
   service:
     url: ${USER_SERVICE_URL:http://localhost:8080}
 
-
+admin:
+  email: ${ADMIN_EMAIL:admin@system.com}
+  password: ${ADMIN_PASSWORD:admin123}
+  name: ${ADMIN_NAME:Admin}
+  surname: ${ADMIN_SURNAME:Admin}
+  retry:
+    maxAttempts: 10
+    delay: 5000
