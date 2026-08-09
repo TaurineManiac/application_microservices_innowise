@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changeset/v1-create-credentials-table.yaml
   - include:
       file: db/changelog/changeset/v2-create-refresh-tokens-table.yaml
+  - include:
+      file: db/changelog/changeset/v3-add-active-to-credentials.yaml
