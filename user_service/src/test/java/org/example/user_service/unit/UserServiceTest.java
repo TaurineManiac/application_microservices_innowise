@@ -1,9 +1,9 @@
 package org.example.user_service.unit;
 
-import org.example.user_service.constant.AppConstraint;
 import org.example.user_service.dto.CreateUserRequest;
 import org.example.user_service.dto.UpdateUserRequest;
 import org.example.user_service.dto.UserResponse;
+import org.example.user_service.dto.UserStatusEvent;
 import org.example.user_service.entity.User;
 import org.example.user_service.exception.EmailAlreadyExistsException;
 import org.example.user_service.exception.EntityNotFoundException;
@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -40,6 +41,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private KafkaTemplate<String, UserStatusEvent> kafkaTemplate;
 
     @Mock
     private PaymentCardService paymentCardService;

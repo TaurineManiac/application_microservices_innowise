@@ -1,5 +1,7 @@
 package org.example.authentication_service.unit;
 
+import org.example.authentication_service.config.KafkaTestConfig;
+import org.example.authentication_service.config.TestApplicationContext;
 import org.example.authentication_service.dto.*;
 import org.example.authentication_service.entity.Credential;
 import org.example.authentication_service.entity.RefreshToken;
@@ -19,6 +21,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -197,9 +201,16 @@ class AuthenticationServiceTest {
     void validateToken_shouldReturnValid_whenTokenIsValid() {
         String token = "valid-token";
         UUID publicId = UUID.randomUUID();
+
+        Credential credential = Credential.builder()
+                .publicId(publicId)
+                .active(true)
+                .build();
+
         when(jwtService.isTokenValid(token)).thenReturn(true);
         when(jwtService.extractPublicId(token)).thenReturn(publicId);
         when(jwtService.extractRole(token)).thenReturn("USER");
+        when(credentialRepository.findByPublicId(publicId)).thenReturn(Optional.of(credential));
 
         ValidateResponse response = authenticationService.validateToken(token);
 

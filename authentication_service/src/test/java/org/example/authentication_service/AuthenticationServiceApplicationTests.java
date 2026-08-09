@@ -1,16 +1,23 @@
 package org.example.authentication_service;
 
+import org.example.authentication_service.config.KafkaTestConfig;
+import org.example.authentication_service.config.TestApplicationContext;
 import org.example.authentication_service.integration.IntegrationTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
+@SpringBootTest(
+        classes = TestApplicationContext.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
 @Testcontainers
+@Import(KafkaTestConfig.class)
 class AuthenticationServiceApplicationTests extends IntegrationTestBase {
 
     @Container

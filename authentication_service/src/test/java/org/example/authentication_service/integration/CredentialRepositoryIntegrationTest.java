@@ -1,5 +1,7 @@
 package org.example.authentication_service.integration;
 
+import org.example.authentication_service.config.KafkaTestConfig;
+import org.example.authentication_service.config.TestApplicationContext;
 import org.example.authentication_service.entity.Credential;
 import org.example.authentication_service.enums.Role;
 import org.example.authentication_service.repository.CredentialRepository;
@@ -7,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +22,13 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(
+        classes = TestApplicationContext.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
 @Transactional
 @Testcontainers
+@Import(KafkaTestConfig.class)
 public class CredentialRepositoryIntegrationTest extends IntegrationTestBase {
 
     @Container
