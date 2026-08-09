@@ -52,4 +52,8 @@ public class Credential {
     @Builder.Default
     @OneToMany(mappedBy = "credential", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST,  CascadeType.REFRESH})
     private Set<RefreshToken> refreshTokens = new HashSet<>();
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
 }
