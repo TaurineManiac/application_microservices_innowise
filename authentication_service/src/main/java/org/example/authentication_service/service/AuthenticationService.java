@@ -1,5 +1,6 @@
 package org.example.authentication_service.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.authentication_service.dto.*;
@@ -104,8 +105,19 @@ public class AuthenticationService {
         try {
             UUID publicId = jwtService.extractPublicId(token);
             String role = jwtService.extractRole(token);
+            Credential credential = credentialRepository.findByPublicId(publicId)
+                    .orElseThrow(EntityNotFoundException::new);
+            if (!credential.getActive()) {
+                log.warn("User {} is inactive, token invalidated", publicId);
+                return new ValidateResponse(null, null, false);
+            }
             return new ValidateResponse(publicId, role, true);
-        } catch (Exception e) {
+        }
+        catch (EntityNotFoundException e){
+            log.warn("Credential not found: {}", e.getMessage());
+            return new ValidateResponse(null, null, false);
+        }
+        catch (Exception e) {
             log.warn("Token validation failed: {}", e.getMessage());
             return new ValidateResponse(null, null, false);
         }
