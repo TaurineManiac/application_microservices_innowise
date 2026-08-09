@@ -6,6 +6,7 @@ import org.example.user_service.constant.AppConstraint;
 import org.example.user_service.dto.CreateUserRequest;
 import org.example.user_service.dto.UpdateUserRequest;
 import org.example.user_service.dto.UserResponse;
+import org.example.user_service.dto.UserStatusEvent;
 import org.example.user_service.entity.User;
 import org.example.user_service.exception.EmailAlreadyExistsException;
 import org.example.user_service.exception.EntityNotFoundException;
@@ -19,6 +20,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @AllArgsConstructor
 public class UserService {
 
-    UserRepository userRepository;
-    PaymentCardService paymentCardService;
-    UserMapper userMapper;
+    private UserRepository userRepository;
+    private PaymentCardService paymentCardService;
+    private UserMapper userMapper;
+    private final KafkaTemplate<String, UserStatusEvent> kafkaTemplate;
+    private static final String USER_STATUS_TOPIC = "user-status-events";
 
     @Transactional
     public UserResponse createUser(CreateUserRequest createUserRequest) {
@@ -143,6 +147,12 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
         user.setActive(false);
         userRepository.save(user);
+
+        UserStatusEvent event = UserStatusEvent.builder()
+                .publicId(publicId)
+                .active(false)
+                .build();
+        kafkaTemplate.send(USER_STATUS_TOPIC, event);
         log.info("User deactivated successfully: {}", publicId);
     }
 
@@ -156,6 +166,12 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
         user.setActive(true);
         userRepository.save(user);
+
+        UserStatusEvent event = UserStatusEvent.builder()
+                .publicId(publicId)
+                .active(true)
+                .build();
+        kafkaTemplate.send(USER_STATUS_TOPIC, event);
         log.info("User activated successfully: {}", publicId);
     }
 
