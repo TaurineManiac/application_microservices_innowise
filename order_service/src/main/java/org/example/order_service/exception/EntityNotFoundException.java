@@ -1,4 +1,4 @@
-package org.example.user_service.exception;
+package org.example.order_service.exception;
 
 public class EntityNotFoundException extends RuntimeException {
     public EntityNotFoundException(String message) {
