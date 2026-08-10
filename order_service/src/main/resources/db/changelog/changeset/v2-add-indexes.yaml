@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2
+      author: Ignat
+      changes:
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_user_public_id
+            columns:
+              - column: { name: user_public_id }
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_deleted
+            columns:
+              - column: { name: deleted }
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_status_deleted
+            columns:
+              - column: { name: status }
+              - column: { name: deleted }
+
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_items_order_id
+            columns:
+              - column: { name: order_id }
+
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_items_item_id
+            columns:
+              - column: { name: item_id }
