@@ -1,1 +1,42 @@
-spring.application.name=order_service
+spring:
+  application:
+    name: order_service
+
+  datasource:
+    url: jdbc:postgresql://${ORDER_DB_HOST:localhost}:${ORDER_DB_PORT:5432}/${ORDER_DB_NAME:order_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres123}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  liquibase:
+    change-log: classpath:db/changelog/changelog-master.yaml
+
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+      authService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+
+user:
+  service:
+    url: ${USER_SERVICE_URL:http://localhost:8080}
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+retry:
+  maxAttempts: 3
+  delay: 500
+  multiplier: 2
