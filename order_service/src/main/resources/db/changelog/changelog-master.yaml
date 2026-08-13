@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changeset/v1-create-tables.yaml
   - include:
       file: db/changelog/changeset/v2-add-indexes.yaml
+  - include:
+      file: db/changelog/changeset/v3-add-order-public-id.yaml
