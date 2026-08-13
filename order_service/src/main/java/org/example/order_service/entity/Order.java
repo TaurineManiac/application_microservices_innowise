@@ -41,6 +41,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private UUID orderPublicId;
+
     @Column(nullable = false)
     private UUID userPublicId;
 
