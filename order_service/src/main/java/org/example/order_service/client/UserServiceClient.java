@@ -9,8 +9,7 @@ import java.util.UUID;
 
 @FeignClient(
         name = "user-service",
-        url = "${user.service.url:http://localhost:8080}",
-        fallback = UserServiceClientFallback.class
+        url = "${user.service.url:http://localhost:8080}"
 )
 public interface UserServiceClient {
 
