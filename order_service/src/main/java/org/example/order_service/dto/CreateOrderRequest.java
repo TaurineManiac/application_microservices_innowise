@@ -15,10 +15,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateOrderRequest {
-
-    @NotNull(message = "User public ID is required")
-    private UUID userPublicId;
-
     @Valid
     @NotNull(message = "Order items cannot be null")
     private List<CreateOrderItemRequest> items;
