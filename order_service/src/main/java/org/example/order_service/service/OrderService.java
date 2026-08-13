@@ -2,21 +2,20 @@ package org.example.order_service.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.order_service.client.UserServiceClient;
-import org.example.order_service.dto.CreateOrderItemRequest;
-import org.example.order_service.dto.CreateOrderRequest;
-import org.example.order_service.dto.OrderResponse;
-import org.example.order_service.dto.UpdateOrderRequest;
+import org.example.order_service.client.UserInfoProvider;
+import org.example.order_service.dto.*;
 import org.example.order_service.entity.Item;
 import org.example.order_service.entity.Order;
 import org.example.order_service.entity.OrderItem;
+import org.example.order_service.enums.ItemStatus;
 import org.example.order_service.enums.OrderStatus;
-import org.example.order_service.exception.EntityInactiveException;
+import org.example.order_service.exception.AccessDeniedException;
 import org.example.order_service.exception.EntityNotFoundException;
 import org.example.order_service.mapper.OrderMapper;
 import org.example.order_service.repository.ItemRepository;
 import org.example.order_service.repository.OrderRepository;
 import org.example.order_service.specification.OrderSpecification;
+import org.example.order_service.util.SecurityUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,18 +31,45 @@ import java.util.UUID;
 @Slf4j
 public class OrderService {
 
-    private final UserServiceClient userServiceClient;
+    private final UserInfoProvider userInfoProvider;
     private final OrderRepository orderRepository;
     private final ItemRepository itemRepository;
     private final OrderItemService orderItemService;
     private final OrderMapper orderMapper;
 
+    private OrderResponse enrichWithUserInfo(OrderResponse response) {
+        UserInfo userInfo = userInfoProvider.getUserInfo(response.getUserPublicId());
+        response.setUserInfo(userInfo);
+        return response;
+    }
+
+    private void checkOrderAccess(Order order) {
+        UUID currentUserId = SecurityUtils.getCurrentUserPublicId();
+        boolean isAdmin = SecurityUtils.isAdmin();
+        if (!isAdmin && !order.getUserPublicId().equals(currentUserId)) {
+            throw new AccessDeniedException("You don't have permission to access this order");
+        }
+    }
+
+    private Order orderAvailableByOrderPublicId(UUID orderPublicId) {
+        Order order = orderRepository.findByOrderPublicId(orderPublicId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderPublicId));
+
+        if (order.getDeleted()) {
+            throw new IllegalStateException("Order is already deleted");
+        }
+        checkOrderAccess(order);
+        return order;
+    }
+
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
-        log.info("Creating order for user: {}", request.getUserPublicId());
+        UUID currentUserId = SecurityUtils.getCurrentUserPublicId();
+        log.info("Creating order for user: {}", currentUserId);
 
         Order order = Order.builder()
-                .userPublicId(request.getUserPublicId())
+                .orderPublicId(UUID.randomUUID())
+                .userPublicId(currentUserId)
                 .status(OrderStatus.CREATED)
                 .price(BigDecimal.ZERO)
                 .deleted(false)
@@ -53,6 +79,10 @@ public class OrderService {
         for (CreateOrderItemRequest itemReq : request.getItems()) {
             Item item = itemRepository.findById(itemReq.getItemId())
                     .orElseThrow(() -> new EntityNotFoundException("Item not found: " + itemReq.getItemId()));
+
+            if (item.getStatus() != ItemStatus.ACTIVE) {
+                throw new IllegalStateException("Item is not active: " + item.getId());
+            }
 
             OrderItem orderItem = orderItemService.createOrderItem(item, itemReq.getQuantity(), order);
             order.getOrderItems().add(orderItem);
@@ -65,19 +95,13 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         log.info("Order created with id: {}", saved.getId());
 
-        return orderMapper.toResponse(saved);
+        return enrichWithUserInfo(orderMapper.toResponse(saved));
     }
 
     @Transactional(readOnly = true)
-    public OrderResponse getOrderById(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + id));
-
-        if (order.getDeleted()) {
-            throw new EntityInactiveException("Order has been deleted");
-        }
-
-        return orderMapper.toResponse(order);
+    public OrderResponse getOrderById(UUID orderPublicId) {
+        Order order = orderAvailableByOrderPublicId(orderPublicId);
+        return enrichWithUserInfo(orderMapper.toResponse(order));
     }
 
     @Transactional(readOnly = true)
@@ -88,6 +112,16 @@ public class OrderService {
             LocalDateTime toDate,
             Pageable pageable) {
 
+        UUID currentUserId = SecurityUtils.getCurrentUserPublicId();
+        boolean isAdmin = SecurityUtils.isAdmin();
+
+        if (!isAdmin) {
+            if (userPublicId != null && !userPublicId.equals(currentUserId)) {
+                throw new AccessDeniedException("You can only view your own orders");
+            }
+            userPublicId = currentUserId;
+        }
+
         Specification<Order> spec = Specification
                 .where(OrderSpecification.notDeleted())
                 .and(OrderSpecification.hasUserPublicId(userPublicId))
@@ -95,7 +129,9 @@ public class OrderService {
                 .and(OrderSpecification.createdBetween(fromDate, toDate));
 
         Page<Order> page = orderRepository.findAll(spec, pageable);
-        return page.map(orderMapper::toResponse);
+
+        return page.map(orderMapper::toResponse)
+                .map(this::enrichWithUserInfo);
     }
 
     @Transactional(readOnly = true)
@@ -104,48 +140,36 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse updateOrder(Long id, UpdateOrderRequest request) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + id));
-
-        if (order.getDeleted()) {
-            throw new IllegalStateException("Cannot update a deleted order");
-        }
+    public OrderResponse updateOrder(UUID orderPublicId, UpdateOrderStatusRequest request) {
+        Order order = orderAvailableByOrderPublicId(orderPublicId);
 
         if (request.getStatus() != null) {
             order.setStatus(request.getStatus());
-            log.info("Order {} status updated to {}", id, request.getStatus());
+            log.info("Order {} status updated to {}", orderPublicId, request.getStatus());
         }
 
         Order updated = orderRepository.save(order);
-        return orderMapper.toResponse(updated);
+        return enrichWithUserInfo(orderMapper.toResponse(updated));
     }
 
     @Transactional
-    public void deleteOrder(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + id));
-
-        if (order.getDeleted()) {
-            throw new IllegalStateException("Order is already deleted");
-        }
+    public void deleteOrder(UUID orderPublicId) {
+        Order order = orderAvailableByOrderPublicId(orderPublicId);
 
         order.setDeleted(true);
         orderRepository.save(order);
-        log.info("Order {} soft-deleted", id);
+        log.info("Order {} soft-deleted", orderPublicId);
     }
 
     @Transactional
-    public void reviveOrder(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + id));
+    public void reviveOrder(UUID orderPublicId) {
+        Order order = orderRepository.findByOrderPublicId(orderPublicId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderPublicId));
 
-        if (!order.getDeleted()) {
-            throw new IllegalStateException("Order is already revived");
-        }
+        checkOrderAccess(order);
 
         order.setDeleted(false);
         orderRepository.save(order);
-        log.info("Order {} soft-revived", id);
+        log.info("Order {} soft-revived", orderPublicId);
     }
 }
