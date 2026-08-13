@@ -10,6 +10,6 @@ import org.example.order_service.enums.OrderStatus;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateOrderRequest {
+public class UpdateOrderStatusRequest {
     private OrderStatus status;
 }
