@@ -16,11 +16,10 @@ import java.util.UUID;
 @Repository
 public interface OrderRepository extends JpaRepository<Order,Long>, JpaSpecificationExecutor<Order> {
     @EntityGraph("Order.detail")
-    @Override
-    Optional<Order> findById(Long id);
+    Optional<Order> findByOrderPublicId(UUID orderPublicId);
 
     @EntityGraph("Order.detail")
-    Page<Order> findByUserPublicId(UUID orderId, Pageable pageable,  Specification<Order> spec);
+    Page<Order> findByUserPublicId(UUID userPublicId, Pageable pageable,  Specification<Order> spec);
 
     @EntityGraph("Order.detail")
     @Override
@@ -32,6 +31,7 @@ public interface OrderRepository extends JpaRepository<Order,Long>, JpaSpecifica
     @EntityGraph("Order.detail")
     List<Order> findAllByUserPublicIdAndDeletedFalse(UUID userPublicId);
 
-    Boolean existsByIdAndDeletedFalse(Long id);
+    Boolean existsByOrderPublicIdAndDeletedFalse(UUID orderPublicId);
+
 
 }
