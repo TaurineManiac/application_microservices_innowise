@@ -15,7 +15,7 @@ public interface ItemMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "orderItems", ignore = true)
+    @Mapping(target = "status", ignore = true)
     Item toEntity(CreateItemRequest request);
 
     ItemResponse toResponse(Item item);
