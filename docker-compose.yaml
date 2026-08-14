@@ -55,6 +55,26 @@ services:
     networks:
       - bank-network
 
+  order-db:
+    image: postgres:17
+    container_name: order-db
+    environment:
+      POSTGRES_DB: ${ORDER_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${ORDER_DB_LOCAL_PORT}:${ORDER_DB_PORT}"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    networks:
+      - bank-network
+
+
   auth-db:
     image: postgres:17
     container_name: auth-db
@@ -148,11 +168,36 @@ services:
     networks:
       - bank-network
 
-
+  order-service:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile
+    container_name: order-service-app
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      ORDER_DB_HOST: order-db
+      ORDER_DB_PORT: ${ORDER_DB_PORT}
+      ORDER_DB_NAME: ${ORDER_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+    depends_on:
+      order-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+    networks:
+      - bank-network
 
 volumes:
   user_db_data:
   auth_db_data:
+  order_db_data:
 
 networks:
   bank-network:
