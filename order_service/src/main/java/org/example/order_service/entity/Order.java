@@ -1,10 +1,7 @@
 package org.example.order_service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.example.order_service.enums.OrderStatus;
 import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
@@ -21,7 +18,8 @@ import java.util.UUID;
 @Table(name = "orders")
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 @Builder
 @EntityListeners(AuditingEntityListener.class)
 @NamedEntityGraph(
@@ -54,6 +52,7 @@ public class Order {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean deleted =false;
 
