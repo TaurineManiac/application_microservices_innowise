@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: Ignat
+      changes:
+        - addColumn:
+            tableName: items
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                  defaultValue: "ACTIVE"
+
+
+        - addColumn:
+            tableName: order_items
+            columns:
+              - column:
+                  name: items_price_at_moment_of_order
+                  type: DECIMAL(19,2)
+                  constraints:
+                    nullable: false
+                  defaultValue: 0

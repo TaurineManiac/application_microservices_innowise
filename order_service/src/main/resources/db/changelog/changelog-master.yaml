@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changeset/v2-add-indexes.yaml
   - include:
       file: db/changelog/changeset/v3-add-order-public-id.yaml
+  - include:
+      file: db/changelog/changeset/v4-add-missing-columns.yaml
