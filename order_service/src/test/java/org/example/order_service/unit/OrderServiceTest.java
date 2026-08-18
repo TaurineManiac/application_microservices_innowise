@@ -494,92 +494,51 @@ class OrderServiceTest {
     }
 
 
+// =========================================================
+// GET ORDERS
+// =========================================================
+
     @Test
     void getOrders_shouldReturnCurrentUserOrders() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Order> page = new PageImpl<>(List.of(order));
 
-        Pageable pageable =
-                PageRequest.of(0, 10);
+        when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(orderMapper.toResponse(order)).thenReturn(response);
+        when(userInfoProvider.getUserInfo(currentUserId)).thenReturn(userInfo);
 
-        Page<Order> page =
-                new PageImpl<>(List.of(order));
+        OrderFilterRequest filter = new OrderFilterRequest(); // пустой – все фильтры null
+        Page<OrderResponse> result = orderService.getOrders(filter, pageable);
 
-        when(orderRepository.findAll(
-                any(Specification.class),
-                eq(pageable)
-        )).thenReturn(page);
-
-        when(orderMapper.toResponse(order))
-                .thenReturn(response);
-
-        when(userInfoProvider.getUserInfo(currentUserId))
-                .thenReturn(userInfo);
-
-        Page<OrderResponse> result =
-                orderService.getOrders(
-                        null,
-                        null,
-                        null,
-                        null,
-                        pageable
-                );
-
-        assertThat(result.getContent())
-                .containsExactly(response);
-
-        verify(orderRepository)
-                .findAll(
-                        any(Specification.class),
-                        eq(pageable)
-                );
+        assertThat(result.getContent()).containsExactly(response);
+        verify(orderRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
     void getOrders_shouldRejectAnotherUserForRegularUser() {
+        Pageable pageable = PageRequest.of(0, 10);
+        OrderFilterRequest filter = new OrderFilterRequest();
+        filter.setUserPublicId(anotherUserId);
 
-        Pageable pageable =
-                PageRequest.of(0, 10);
-
-        assertThatThrownBy(
-                () -> orderService.getOrders(
-                        anotherUserId,
-                        null,
-                        null,
-                        null,
-                        pageable
-                )
-        )
+        assertThatThrownBy(() -> orderService.getOrders(filter, pageable))
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessageContaining(
-                        "only view your own orders"
-                );
+                .hasMessageContaining("only view your own orders");
 
-        verify(orderRepository, never())
-                .findAll(
-                        any(Specification.class),
-                        any(Pageable.class)
-                );
+        verify(orderRepository, never()).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void getOrders_shouldAllowAdminToRequestAnotherUser() {
-
         mockSecurityAdmin();
 
         order.setUserPublicId(anotherUserId);
         response.setUserPublicId(anotherUserId);
 
         Pageable pageable = PageRequest.of(0, 10);
+        Page<Order> page = new PageImpl<>(List.of(order));
 
-        Page<Order> page =
-                new PageImpl<>(List.of(order));
-
-        when(orderRepository.findAll(
-                any(Specification.class),
-                eq(pageable)
-        )).thenReturn(page);
-
-        when(orderMapper.toResponse(order))
-                .thenReturn(response);
+        when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(orderMapper.toResponse(order)).thenReturn(response);
 
         UserInfo anotherUserInfo = UserInfo.builder()
                 .publicId(anotherUserId)
@@ -587,74 +546,39 @@ class OrderServiceTest {
                 .surname("Doe")
                 .email("john@test.com")
                 .build();
+        when(userInfoProvider.getUserInfo(anotherUserId)).thenReturn(anotherUserInfo);
 
-        when(userInfoProvider.getUserInfo(anotherUserId))
-                .thenReturn(anotherUserInfo);
+        OrderFilterRequest filter = new OrderFilterRequest();
+        filter.setUserPublicId(anotherUserId);
+        Page<OrderResponse> result = orderService.getOrders(filter, pageable);
 
-        Page<OrderResponse> result =
-                orderService.getOrders(
-                        anotherUserId,
-                        null,
-                        null,
-                        null,
-                        pageable
-                );
-
-        assertThat(result.getContent())
-                .containsExactly(response);
-
-        verify(orderRepository)
-                .findAll(
-                        any(Specification.class),
-                        eq(pageable)
-                );
-
-        verify(userInfoProvider)
-                .getUserInfo(anotherUserId);
+        assertThat(result.getContent()).containsExactly(response);
+        verify(orderRepository).findAll(any(Specification.class), eq(pageable));
+        verify(userInfoProvider).getUserInfo(anotherUserId);
     }
+
     @Test
     void getOrders_shouldPassFiltersToRepository() {
+        Pageable pageable = PageRequest.of(0, 10);
+        LocalDateTime from = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, 12, 31, 23, 59);
 
-        Pageable pageable =
-                PageRequest.of(0, 10);
+        Page<Order> page = new PageImpl<>(List.of(order));
 
-        LocalDateTime from =
-                LocalDateTime.of(2026, 1, 1, 0, 0);
+        when(orderRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(orderMapper.toResponse(order)).thenReturn(response);
+        when(userInfoProvider.getUserInfo(currentUserId)).thenReturn(userInfo);
 
-        LocalDateTime to =
-                LocalDateTime.of(2026, 12, 31, 23, 59);
+        OrderFilterRequest filter = new OrderFilterRequest();
+        filter.setUserPublicId(currentUserId);
+        filter.setStatus(OrderStatus.CREATED);
+        filter.setFromDate(from);
+        filter.setToDate(to);
 
-        Page<Order> page =
-                new PageImpl<>(List.of(order));
+        Page<OrderResponse> result = orderService.getOrders(filter, pageable);
 
-        when(orderRepository.findAll(
-                any(Specification.class),
-                eq(pageable)
-        )).thenReturn(page);
-
-        when(orderMapper.toResponse(order))
-                .thenReturn(response);
-
-        when(userInfoProvider.getUserInfo(currentUserId))
-                .thenReturn(userInfo);
-
-        Page<OrderResponse> result =
-                orderService.getOrders(
-                        currentUserId,
-                        OrderStatus.CREATED,
-                        from,
-                        to,
-                        pageable
-                );
-
-        assertThat(result.getContent())
-                .containsExactly(response);
-
-        verify(orderRepository)
-                .findAll(
-                        any(Specification.class),
-                        eq(pageable)
-                );
+        assertThat(result.getContent()).containsExactly(response);
+        verify(orderRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test

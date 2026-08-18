@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.order_service.dto.CreateOrderRequest;
+import org.example.order_service.dto.OrderFilterRequest;
 import org.example.order_service.dto.OrderResponse;
 import org.example.order_service.dto.UpdateOrderStatusRequest;
 import org.example.order_service.enums.OrderStatus;
@@ -38,14 +39,11 @@ public class OrderController {
 
     @GetMapping
     public ResponseEntity<Page<OrderResponse>> getOrders(
-            @RequestParam(required = false) UUID userPublicId,
-            @RequestParam(required = false) OrderStatus status,
-            @RequestParam(required = false) LocalDateTime fromDate,
-            @RequestParam(required = false) LocalDateTime toDate,
+            @ModelAttribute OrderFilterRequest filter,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         log.info("REST request to get orders with filters");
-        return ResponseEntity.ok(orderService.getOrders(userPublicId, status, fromDate, toDate, pageable));
+        return ResponseEntity.ok(orderService.getOrders(filter, pageable));
     }
 
     @GetMapping("/user/{userPublicId}")

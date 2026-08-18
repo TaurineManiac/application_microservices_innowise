@@ -43,6 +43,15 @@ public class OrderService {
         return response;
     }
 
+    private Specification<Order> buildOrderSpecification(UUID userPublicId, OrderStatus status,
+                                                         LocalDateTime fromDate, LocalDateTime toDate) {
+        return Specification
+                .where(OrderSpecification.notDeleted())
+                .and(OrderSpecification.hasUserPublicId(userPublicId))
+                .and(OrderSpecification.hasStatus(status))
+                .and(OrderSpecification.createdBetween(fromDate, toDate));
+    }
+
     private void checkOrderAccess(Order order) {
         UUID currentUserId = SecurityUtils.getCurrentUserPublicId();
         boolean isAdmin = SecurityUtils.isAdmin();
@@ -105,12 +114,11 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getOrders(
-            UUID userPublicId,
-            OrderStatus status,
-            LocalDateTime fromDate,
-            LocalDateTime toDate,
-            Pageable pageable) {
+    public Page<OrderResponse> getOrders(OrderFilterRequest filter, Pageable pageable) {
+        UUID userPublicId = filter.getUserPublicId();
+        OrderStatus status = filter.getStatus();
+        LocalDateTime fromDate = filter.getFromDate();
+        LocalDateTime toDate = filter.getToDate();
 
         UUID currentUserId = SecurityUtils.getCurrentUserPublicId();
         boolean isAdmin = SecurityUtils.isAdmin();
@@ -122,12 +130,7 @@ public class OrderService {
             userPublicId = currentUserId;
         }
 
-        Specification<Order> spec = Specification
-                .where(OrderSpecification.notDeleted())
-                .and(OrderSpecification.hasUserPublicId(userPublicId))
-                .and(OrderSpecification.hasStatus(status))
-                .and(OrderSpecification.createdBetween(fromDate, toDate));
-
+        Specification<Order> spec = buildOrderSpecification(userPublicId, status, fromDate, toDate);
         Page<Order> page = orderRepository.findAll(spec, pageable);
 
         return page.map(orderMapper::toResponse)
@@ -136,7 +139,9 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getOrdersByUser(UUID userPublicId, Pageable pageable) {
-        return getOrders(userPublicId, null, null, null, pageable);
+        OrderFilterRequest filter = new OrderFilterRequest();
+        filter.setUserPublicId(userPublicId);
+        return getOrders(filter, pageable);
     }
 
     @Transactional
