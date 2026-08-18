@@ -20,7 +20,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationConfig extends OncePerRequestFilter {
 
     private final AuthenticationValidationProvider authServiceClient;
 
