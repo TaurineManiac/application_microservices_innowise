@@ -71,9 +71,9 @@ class ApiGatewayRoutingIntegrationTest {
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        // Очищаем очередь запросов
+
         while (mockBackend.takeRequest(100, TimeUnit.MILLISECONDS) != null) {
-            // пропускаем
+
         }
 
         this.webTestClient = WebTestClient.bindToServer()
@@ -85,7 +85,7 @@ class ApiGatewayRoutingIntegrationTest {
     static void registerProperties(DynamicPropertyRegistry registry) {
         String backendUrl = mockBackend.url("/").toString();
         registry.add("mock.backend.url", () -> backendUrl);
-        registry.add("auth.service.url", () -> backendUrl);  // <-- КРИТИЧНО!
+        registry.add("auth.service.url", () -> backendUrl);
     }
 
     @Test
