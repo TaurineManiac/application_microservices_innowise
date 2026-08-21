@@ -83,4 +83,13 @@ public class UserController {
         userService.deactivateUser(publicId);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/internal/{publicId}")
+    public ResponseEntity<Void> rollbackUser(
+            @PathVariable UUID publicId,
+            @RequestHeader("X-Internal-Token") String internalToken) {
+        log.info("REST request to rollback user: {}", publicId);
+        userService.rollbackUser(publicId, internalToken);
+        return ResponseEntity.noContent().build();
+    }
 }
