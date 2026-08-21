@@ -7,9 +7,14 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -21,18 +26,37 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(ApiGatewayRoutingIntegrationTest.TestGatewayConfig.class)
 class ApiGatewayRoutingIntegrationTest {
 
     private static MockWebServer mockBackend;
 
     @LocalServerPort
-    private int gatewayPort;
+    private int port;
 
-    @Autowired
     private WebTestClient webTestClient;
 
     private final UUID userId =
             UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+    @TestConfiguration
+    static class TestGatewayConfig {
+        @Bean
+        public RouteLocator customRouteLocator(RouteLocatorBuilder builder,
+                                               @Value("${mock.backend.url}") String backendUrl) {
+            return builder.routes()
+                    .route("auth-service", r -> r
+                            .path("/api/auth/login", "/api/auth/refresh", "/api/auth/register")
+                            .uri(backendUrl))
+                    .route("user-service", r -> r
+                            .path("/api/v1/users/**")
+                            .uri(backendUrl))
+                    .route("order-service", r -> r
+                            .path("/api/v1/orders/**")
+                            .uri(backendUrl))
+                    .build();
+        }
+    }
 
     @BeforeAll
     static void setUpServer() throws IOException {
@@ -46,59 +70,34 @@ class ApiGatewayRoutingIntegrationTest {
     }
 
     @BeforeEach
-    void resetServer() throws InterruptedException {
+    void setUp() throws InterruptedException {
+        // Очищаем очередь запросов
         while (mockBackend.takeRequest(100, TimeUnit.MILLISECONDS) != null) {
-            // очищаем предыдущие requests
+            // пропускаем
         }
+
+        this.webTestClient = WebTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .build();
     }
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
-
         String backendUrl = mockBackend.url("/").toString();
-
-        registry.add("AUTH_SERVICE_URL", () -> backendUrl);
-        registry.add("USER_SERVICE_URL", () -> backendUrl);
-        registry.add("ORDER_SERVICE_URL", () -> backendUrl);
-
-        registry.add(
-                "AUTH_SERVICE_PREDICATE_LOGIN",
-                () -> "/api/auth/login"
-        );
-
-        registry.add(
-                "AUTH_SERVICE_PREDICATE_REFRESH",
-                () -> "/api/auth/refresh"
-        );
-
-        registry.add(
-                "AUTH_SERVICE_PREDICATE_REGISTER",
-                () -> "/api/auth/register"
-        );
-
-        registry.add(
-                "USER_SERVICE_PREDICATE",
-                () -> "/api/v1/users/**"
-        );
-
-        registry.add(
-                "ORDER_SERVICE_PREDICATE",
-                () -> "/api/v1/orders/**"
-        );
+        registry.add("mock.backend.url", () -> backendUrl);
+        registry.add("auth.service.url", () -> backendUrl);  // <-- КРИТИЧНО!
     }
 
     @Test
     void shouldRouteLoginRequestToAuthService() throws Exception {
-
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(200)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "message": "login successful"
-                                }
-                                """)
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "message": "login successful"
+                        }
+                        """)
         );
 
         webTestClient
@@ -121,9 +120,7 @@ class ApiGatewayRoutingIntegrationTest {
                         }
                         """);
 
-        RecordedRequest request =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
+        RecordedRequest request = mockBackend.takeRequest(1, TimeUnit.SECONDS);
         assertThat(request).isNotNull();
         assertThat(request.getMethod()).isEqualTo("POST");
         assertThat(request.getPath()).isEqualTo("/api/auth/login");
@@ -131,16 +128,14 @@ class ApiGatewayRoutingIntegrationTest {
 
     @Test
     void shouldRouteRegisterRequestToAuthService() throws Exception {
-
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(201)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "message": "registration successful"
-                                }
-                                """)
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(201)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "message": "registration successful"
+                        }
+                        """)
         );
 
         webTestClient
@@ -165,9 +160,7 @@ class ApiGatewayRoutingIntegrationTest {
                         }
                         """);
 
-        RecordedRequest request =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
+        RecordedRequest request = mockBackend.takeRequest(1, TimeUnit.SECONDS);
         assertThat(request).isNotNull();
         assertThat(request.getMethod()).isEqualTo("POST");
         assertThat(request.getPath()).isEqualTo("/api/auth/register");
@@ -175,37 +168,35 @@ class ApiGatewayRoutingIntegrationTest {
 
     @Test
     void shouldValidateJwtAndRouteRequestToUserService() throws Exception {
-
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(200)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "valid": true,
-                                  "publicId": "11111111-1111-1111-1111-111111111111",
-                                  "role": "USER"
-                                }
-                                """)
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "valid": true,
+                          "publicId": "11111111-1111-1111-1111-111111111111",
+                          "role": "USER"
+                        }
+                        """)
+        );
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": "123",
+                          "name": "John",
+                          "surname": "Doe"
+                        }
+                        """)
         );
 
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(200)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "id": "123",
-                                  "name": "John",
-                                  "surname": "Doe"
-                                }
-                                """)
-        );
-
-        webTestClient
+        WebTestClient.RequestHeadersSpec<?> request = (WebTestClient.RequestHeadersSpec<?>) webTestClient
                 .get()
                 .uri("/api/v1/users/me")
-                .header("Authorization", "Bearer valid-token")
+                .header("Authorization", "Bearer valid-token");
+
+        request
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -218,62 +209,50 @@ class ApiGatewayRoutingIntegrationTest {
                         }
                         """);
 
-        RecordedRequest validationRequest =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
+        RecordedRequest validationRequest = mockBackend.takeRequest(1, TimeUnit.SECONDS);
         assertThat(validationRequest).isNotNull();
         assertThat(validationRequest.getMethod()).isEqualTo("GET");
-        assertThat(validationRequest.getPath())
-                .isEqualTo("/api/auth/validate");
-        assertThat(validationRequest.getHeader("Authorization"))
-                .isEqualTo("Bearer valid-token");
+        assertThat(validationRequest.getPath()).isEqualTo("/api/auth/validate");
+        assertThat(validationRequest.getHeader("Authorization")).isEqualTo("Bearer valid-token");
 
-        RecordedRequest userRequest =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
+        RecordedRequest userRequest = mockBackend.takeRequest(1, TimeUnit.SECONDS);
         assertThat(userRequest).isNotNull();
         assertThat(userRequest.getMethod()).isEqualTo("GET");
         assertThat(userRequest.getPath()).isEqualTo("/api/v1/users/me");
-
-        assertThat(userRequest.getHeader("X-User-UUID"))
-                .isEqualTo(userId.toString());
-
-        assertThat(userRequest.getHeader("X-User-Role"))
-                .isEqualTo("USER");
+        assertThat(userRequest.getHeader("X-User-UUID")).isEqualTo(userId.toString());
+        assertThat(userRequest.getHeader("X-User-Role")).isEqualTo("USER");
     }
 
     @Test
     void shouldRouteOrderRequestToOrderService() throws Exception {
-
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(200)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "valid": true,
-                                  "publicId": "11111111-1111-1111-1111-111111111111",
-                                  "role": "USER"
-                                }
-                                """)
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "valid": true,
+                          "publicId": "11111111-1111-1111-1111-111111111111",
+                          "role": "USER"
+                        }
+                        """)
+        );
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": 10,
+                          "status": "CREATED"
+                        }
+                        """)
         );
 
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(200)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "id": 10,
-                                  "status": "CREATED"
-                                }
-                                """)
-        );
-
-        webTestClient
+        WebTestClient.RequestHeadersSpec<?> request = (WebTestClient.RequestHeadersSpec<?>) webTestClient
                 .get()
                 .uri("/api/v1/orders/10")
-                .header("Authorization", "Bearer valid-token")
+                .header("Authorization", "Bearer valid-token");
+
+        request
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -285,34 +264,25 @@ class ApiGatewayRoutingIntegrationTest {
                         }
                         """);
 
-        RecordedRequest validationRequest =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
+        RecordedRequest validationRequest = mockBackend.takeRequest(1, TimeUnit.SECONDS);
         assertThat(validationRequest).isNotNull();
-        assertThat(validationRequest.getPath())
-                .isEqualTo("/api/auth/validate");
+        assertThat(validationRequest.getPath()).isEqualTo("/api/auth/validate");
 
-        RecordedRequest orderRequest =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
+        RecordedRequest orderRequest = mockBackend.takeRequest(1, TimeUnit.SECONDS);
         assertThat(orderRequest).isNotNull();
         assertThat(orderRequest.getMethod()).isEqualTo("GET");
-        assertThat(orderRequest.getPath())
-                .isEqualTo("/api/v1/orders/10");
-
-        assertThat(orderRequest.getHeader("X-User-UUID"))
-                .isEqualTo(userId.toString());
-
-        assertThat(orderRequest.getHeader("X-User-Role"))
-                .isEqualTo("USER");
+        assertThat(orderRequest.getPath()).isEqualTo("/api/v1/orders/10");
+        assertThat(orderRequest.getHeader("X-User-UUID")).isEqualTo(userId.toString());
+        assertThat(orderRequest.getHeader("X-User-Role")).isEqualTo("USER");
     }
 
     @Test
     void shouldReturn401WhenProtectedRouteHasNoToken() {
-
-        webTestClient
+        WebTestClient.RequestHeadersSpec<?> request = webTestClient
                 .get()
-                .uri("/api/v1/users/me")
+                .uri("/api/v1/users/me");
+
+        request
                 .exchange()
                 .expectStatus()
                 .isUnauthorized();
@@ -320,34 +290,29 @@ class ApiGatewayRoutingIntegrationTest {
 
     @Test
     void shouldReturn401WhenJwtIsInvalid() throws Exception {
-
-        mockBackend.enqueue(
-                new MockResponse()
-                        .setResponseCode(200)
-                        .setHeader("Content-Type", "application/json")
-                        .setBody("""
-                                {
-                                  "valid": false
-                                }
-                                """)
+        mockBackend.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "valid": false
+                        }
+                        """)
         );
 
-        webTestClient
+        WebTestClient.RequestHeadersSpec<?> request = (WebTestClient.RequestHeadersSpec<?>) webTestClient
                 .get()
                 .uri("/api/v1/users/me")
-                .header("Authorization", "Bearer invalid-token")
+                .header("Authorization", "Bearer invalid-token");
+
+        request
                 .exchange()
                 .expectStatus()
                 .isUnauthorized();
 
-        RecordedRequest request =
-                mockBackend.takeRequest(1, TimeUnit.SECONDS);
-
-        assertThat(request).isNotNull();
-        assertThat(request.getPath())
-                .isEqualTo("/api/auth/validate");
-
-        assertThat(request.getHeader("Authorization"))
-                .isEqualTo("Bearer invalid-token");
+        RecordedRequest req = mockBackend.takeRequest(1, TimeUnit.SECONDS);
+        assertThat(req).isNotNull();
+        assertThat(req.getPath()).isEqualTo("/api/auth/validate");
+        assertThat(req.getHeader("Authorization")).isEqualTo("Bearer invalid-token");
     }
 }
