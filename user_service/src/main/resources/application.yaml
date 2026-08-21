@@ -70,3 +70,7 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+
+internal:
+  service:
+    token: ${INTERNAL_SERVICE_TOKEN}

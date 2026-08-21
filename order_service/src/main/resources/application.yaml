@@ -40,3 +40,7 @@ retry:
   maxAttempts: 3
   delay: 500
   multiplier: 2
+
+internal:
+  service:
+    token: ${INTERNAL_SERVICE_TOKEN}
