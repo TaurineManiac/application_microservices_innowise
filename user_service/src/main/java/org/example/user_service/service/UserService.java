@@ -71,7 +71,6 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict
     public void rollbackUser(UUID publicId, String providedToken) {
         if(providedToken == null || providedToken.isEmpty() || !providedToken.equals(internalToken)){
             log.warn("Invalid internal token for rollback attempt on user: {}", publicId);
