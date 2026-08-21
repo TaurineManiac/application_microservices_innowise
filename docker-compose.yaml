@@ -109,13 +109,34 @@ services:
       retries: 5
 
 
+  api-gateway:
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway-app
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
+      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL}
+      - INTERNAL_SERVICE_TOKEN=${INTERNAL_SERVICE_TOKEN}
+    depends_on:
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    networks:
+      - bank-network
+
   user-service:
     build:
       context: ./user_service
       dockerfile: Dockerfile
     container_name: user-service-app
-    ports:
-      - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_HOST: user-db
@@ -127,6 +148,7 @@ services:
       REDIS_PORT: ${REDIS_PORT}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
       KAFKA_BOOTSTRAP_SERVERS: kafka:${KAFKA_CONTAINER_PORT}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
     depends_on:
       user-db:
         condition: service_healthy
@@ -142,8 +164,6 @@ services:
       context: ./authentication_service
       dockerfile: Dockerfile
     container_name: auth-service-app
-    ports:
-      - "8081:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       ADMIN_EMAIL: ${ADMIN_EMAIL}
@@ -160,6 +180,7 @@ services:
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
       USER_SERVICE_URL: ${USER_SERVICE_URL}
       KAFKA_BOOTSTRAP_SERVERS: kafka:${KAFKA_CONTAINER_PORT}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -173,8 +194,6 @@ services:
       context: ./order_service
       dockerfile: Dockerfile
     container_name: order-service-app
-    ports:
-      - "8082:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       ORDER_DB_HOST: order-db
