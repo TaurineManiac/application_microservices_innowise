@@ -35,3 +35,7 @@ admin:
   retry:
     maxAttempts: 10
     delay: 5000
+
+internal:
+  service:
+    token: ${INTERNAL_SERVICE_TOKEN}
