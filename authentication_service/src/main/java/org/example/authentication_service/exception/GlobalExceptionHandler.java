@@ -24,6 +24,12 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(RegistrationFailedException.class)
+    public ResponseEntity<ErrorResponse> handleRegistrationFailed(RegistrationFailedException ex, HttpServletRequest request) {
+        log.error("Registration failed: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, HttpServletRequest request) {
         log.error("Invalid token: {}", ex.getMessage());
