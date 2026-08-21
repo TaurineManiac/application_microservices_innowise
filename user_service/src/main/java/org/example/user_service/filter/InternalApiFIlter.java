@@ -1,4 +1,4 @@
-package org.example.user_service.config;
+package org.example.user_service.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -13,7 +15,13 @@ import java.io.IOException;
 
 @Component
 @Slf4j
-public class InternalApiFIlter extends OncePerRequestFilter {
+@Order(Ordered.HIGHEST_PRECEDENCE+1)
+public class InternalApiFIlter extends OncePerRequestFilter implements Ordered {
+
+    @Override
+    public int getOrder(){
+        return Ordered.HIGHEST_PRECEDENCE+1;
+    }
 
     @Value("${internal.service.token}")
     private String internalToken;
