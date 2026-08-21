@@ -1,6 +1,7 @@
 package org.example.order_service.config;
 
 import lombok.RequiredArgsConstructor;
+import org.example.order_service.filter.HeaderAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -16,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationConfig jwtAuthenticationFilter;
+    private final HeaderAuthenticationFilter headerAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,7 +32,7 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         )
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
