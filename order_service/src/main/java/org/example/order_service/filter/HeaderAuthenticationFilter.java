@@ -1,4 +1,4 @@
-package org.example.user_service.config;
+package org.example.order_service.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,11 +27,6 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api/v1/users/internal/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         String publicIdHeader = request.getHeader("X-User-UUID");
         String roleHeader =  request.getHeader("X-User-Role");
 
@@ -55,7 +50,7 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         else{
-            log.debug("No Gateway authentication headers found for {}", path);
+            log.debug("No Gateway authentication headers found");
         }
 
         filterChain.doFilter(request, response);
