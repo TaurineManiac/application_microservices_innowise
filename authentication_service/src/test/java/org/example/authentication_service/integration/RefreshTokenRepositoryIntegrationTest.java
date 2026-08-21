@@ -46,6 +46,7 @@ public class RefreshTokenRepositoryIntegrationTest extends IntegrationTestBase {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("jwt.secret", () -> "dGVzdC1zZWNyZXQta2V5LWZvci1qd3Qtc2lnbmluZy10ZXN0cy0xMjM0NTY=");
+        registry.add("internal.service.token", () -> "test-token");
     }
 
     @Autowired
