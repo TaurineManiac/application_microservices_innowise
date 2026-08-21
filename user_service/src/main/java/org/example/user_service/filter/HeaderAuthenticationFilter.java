@@ -1,10 +1,12 @@
-package org.example.user_service.config;
+package org.example.user_service.filter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,7 +19,13 @@ import java.util.UUID;
 
 @Component
 @Slf4j
-public class HeaderAuthenticationFilter extends OncePerRequestFilter {
+@Order(Ordered.HIGHEST_PRECEDENCE+2)
+public class HeaderAuthenticationFilter extends OncePerRequestFilter implements Ordered{
+
+    @Override
+    public int getOrder(){
+        return Ordered.HIGHEST_PRECEDENCE+2;
+    }
 
     @Override
     protected void doFilterInternal(
