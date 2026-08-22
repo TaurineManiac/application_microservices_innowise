@@ -139,7 +139,7 @@ public class AuthenticationService {
                 .dateOfBirth(request.getDateOfBirth())
                 .build();
 
-        UserResponse userResponse = userServiceClient.createUser(createUserRequest);
+        UserResponse userResponse = userServiceClient.createUser(createUserRequest, internalServiceToken);
         log.info("User created successfully: {}", userResponse.getEmail());
 
         try {

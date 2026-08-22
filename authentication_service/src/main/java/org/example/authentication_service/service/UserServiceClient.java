@@ -11,7 +11,8 @@ import java.util.UUID;
 public interface UserServiceClient {
 
     @PostMapping("/api/v1/users")
-    UserResponse createUser(@RequestBody CreateUserRequest request);
+    UserResponse createUser(@RequestBody CreateUserRequest request,
+                            @RequestHeader("X-Internal-Token") String internalToken);
 
     @DeleteMapping("/api/v1/users/internal/{publicId}")
     void rollbackUser(@PathVariable("publicId") UUID publicId,
