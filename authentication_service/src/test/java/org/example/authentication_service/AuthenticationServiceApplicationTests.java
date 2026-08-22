@@ -37,6 +37,7 @@ class AuthenticationServiceApplicationTests extends IntegrationTestBase {
         registry.add("spring.liquibase.change-log", () -> "classpath:db/changelog/changelog-master.yaml");
         registry.add("jwt.secret", () -> "dGVzdC1zZWNyZXQta2V5LWZvci1qd3Qtc2lnbmluZy10ZXN0cy0xMjM0NTY=");
         registry.add("user.service.url", () -> "http://localhost:8080");
+        registry.add("internal.service.token", () -> "test-token");
     }
 
     @Test

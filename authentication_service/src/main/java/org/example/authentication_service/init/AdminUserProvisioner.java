@@ -8,6 +8,7 @@ import org.example.authentication_service.entity.Credential;
 import org.example.authentication_service.enums.Role;
 import org.example.authentication_service.repository.CredentialRepository;
 import org.example.authentication_service.service.UserServiceClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -21,6 +22,8 @@ import java.time.LocalDate;
 @Slf4j
 public class AdminUserProvisioner {
 
+    @Value("${internal.service.token}")
+    private String internalServiceToken;
     private final CredentialRepository credentialRepository;
     private final UserServiceClient userServiceClient;
     private final PasswordEncoder passwordEncoder;
@@ -37,7 +40,7 @@ public class AdminUserProvisioner {
                 .email(email)
                 .build();
 
-        UserResponse userResponse = userServiceClient.createUser(request);
+        UserResponse userResponse = userServiceClient.createUser(request, internalServiceToken);
 
         Credential credential = Credential.builder()
                 .publicId(userResponse.getPublicId())

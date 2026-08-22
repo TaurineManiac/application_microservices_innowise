@@ -34,7 +34,7 @@ public class UserController {
     }
 
     @GetMapping("/{publicId}")
-    @PreAuthorize("hasRole('ADMIN') or #publicId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicId == authentication.principal")
     public ResponseEntity<UserResponse> getUserByPublicId(@PathVariable UUID publicId) {
         log.info("REST request to get user by publicId: {}", publicId);
         UserResponse response = userService.getUserResponseByPublicId(publicId);
@@ -58,7 +58,7 @@ public class UserController {
     }
 
     @PutMapping("/{publicId}")
-    @PreAuthorize("hasRole('ADMIN') or #publicId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicId == authentication.principal")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable UUID publicId,
             @Valid @RequestBody UpdateUserRequest request) {
@@ -81,6 +81,15 @@ public class UserController {
     public ResponseEntity<Void> deactivateUser(@PathVariable UUID publicId) {
         log.info("REST request to deactivate user with publicId: {}", publicId);
         userService.deactivateUser(publicId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/internal/{publicId}")
+    public ResponseEntity<Void> rollbackUser(
+            @PathVariable UUID publicId,
+            @RequestHeader("X-Internal-Token") String internalToken) {
+        log.info("REST request to rollback user: {}", publicId);
+        userService.rollbackUser(publicId, internalToken);
         return ResponseEntity.noContent().build();
     }
 }

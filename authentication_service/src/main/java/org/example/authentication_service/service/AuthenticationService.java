@@ -10,6 +10,7 @@ import org.example.authentication_service.enums.Role;
 import org.example.authentication_service.exception.EmailAlreadyExistsException;
 import org.example.authentication_service.exception.InvalidCredentialException;
 import org.example.authentication_service.exception.InvalidTokenException;
+import org.example.authentication_service.exception.RegistrationFailedException;
 import org.example.authentication_service.repository.CredentialRepository;
 import org.example.authentication_service.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,9 @@ import java.util.UUID;
 @Slf4j
 @Transactional
 public class AuthenticationService {
+
+    @Value("${internal.service.token}")
+    private String internalServiceToken;
 
     private final CredentialRepository credentialRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -135,17 +139,34 @@ public class AuthenticationService {
                 .dateOfBirth(request.getDateOfBirth())
                 .build();
 
-        UserResponse userResponse = userServiceClient.createUser(createUserRequest);
+        UserResponse userResponse = userServiceClient.createUser(createUserRequest, internalServiceToken);
         log.info("User created successfully: {}", userResponse.getEmail());
 
-        Credential credential = Credential.builder()
-                .publicId(userResponse.getPublicId())
-                .email(userResponse.getEmail())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
-                .build();
+        try {
+            Credential credential = Credential.builder()
+                    .publicId(userResponse.getPublicId())
+                    .email(userResponse.getEmail())
+                    .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .role(Role.USER)
+                    .build();
 
-        credentialRepository.save(credential);
+            credentialRepository.save(credential);
+            log.info("Credentials saved successfully for user: {}", userResponse.getPublicId());
+
+        } catch (Exception e) {
+            log.error("Failed to save credential for user {}, rolling back...", userResponse.getPublicId(), e);
+
+            try {
+                userServiceClient.rollbackUser(userResponse.getPublicId(), internalServiceToken);
+                log.info("Rollback successful for user {}", userResponse.getPublicId());
+            } catch (Exception rollbackEx) {
+                log.error("CRITICAL: Rollback of user {} ALSO FAILED. Manual cleanup required!",
+                        userResponse.getPublicId(), rollbackEx);
+            }
+
+            throw new RegistrationFailedException("Registration failed, please try again later", e);
+        }
+
         return userResponse;
     }
 }

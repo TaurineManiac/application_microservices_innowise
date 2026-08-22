@@ -14,26 +14,30 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class FeignClientConfig {
 
     @Bean
-    public RequestInterceptor authorizationHeaderInterceptor() {
-        return (RequestTemplate template) -> {
-            if (template.headers().containsKey("Authorization")) {
-                return;
-            }
+    public RequestInterceptor gatewayHeaderInterceptor() {
+        return new RequestInterceptor() {
+            @Override
+            public void apply(RequestTemplate requestTemplate) {
+                ServletRequestAttributes attributes =
+                        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
-            ServletRequestAttributes attributes =
-                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+                if(attributes != null) {
+                    log.debug("No request attributes, skipping header propagation");
+                    return;
+                }
 
-            if (attributes == null) {
-                return;
-            }
+                HttpServletRequest request = attributes.getRequest();
 
-            HttpServletRequest request = attributes.getRequest();
-            String authorizationHeader = request.getHeader("Authorization");
+                String publicIdHeader = request.getHeader("X-Public-Id");
+                String roleHeader = request.getHeader("X-User-Role");
 
-            if (authorizationHeader != null) {
-                template.header("Authorization", authorizationHeader);
-            } else {
-                log.debug("No Authorization header found on incoming request to forward via Feign");
+                if (publicIdHeader != null) {
+                    requestTemplate.header("X-User-UUID", publicIdHeader);
+                }
+                if (roleHeader != null) {
+                    requestTemplate.header("X-User-Role", roleHeader);
+                }
+
             }
         };
     }

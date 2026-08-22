@@ -1,6 +1,6 @@
 package org.example.user_service.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.user_service.constant.AppConstraint;
 import org.example.user_service.dto.CreateUserRequest;
@@ -14,6 +14,7 @@ import org.example.user_service.exception.GenerationException;
 import org.example.user_service.mapper.UserMapper;
 import org.example.user_service.repository.UserRepository;
 import org.example.user_service.specification.UserSpecification;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -25,16 +26,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserService {
 
-    private UserRepository userRepository;
-    private PaymentCardService paymentCardService;
-    private UserMapper userMapper;
+    @Value("${internal.service.token}")
+    private String internalToken;
+    private final UserRepository userRepository;
+    private final PaymentCardService paymentCardService;
+    private final UserMapper userMapper;
     private final KafkaTemplate<String, UserStatusEvent> kafkaTemplate;
     private static final String USER_STATUS_TOPIC = "user-status-events";
 
@@ -66,6 +68,20 @@ public class UserService {
             }
         }
         throw new GenerationException("Something went wrong, retry again later.");
+    }
+
+    @Transactional
+    public void rollbackUser(UUID publicId, String providedToken) {
+        if(providedToken == null || providedToken.isEmpty() || !providedToken.equals(internalToken)){
+            log.warn("Invalid internal token for rollback attempt on user: {}", publicId);
+            throw new SecurityException("Invalid internal token");
+        }
+
+        User user = userRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + publicId));
+        userRepository.delete(user);
+        log.warn("User {} hard-deleted due to rollback", publicId);
+
     }
 
     @Cacheable(value = "users", key = "#publicId")
@@ -130,13 +146,6 @@ public class UserService {
         return userMapper.toUserResponse(updated);
     }
 
-// I prefer not to use it, because in real bank application we won't delete sensitive data, I suppose.
-//    @Transactional
-//    public void deleteUser(String publicId) {
-//        User user = userRepository.findByPublicId(publicId)
-//                .orElseThrow(() -> new EntityNotFoundException("User not found with publicId: " + publicId));
-//        userRepository.delete(user);
-//    }
 
     @CacheEvict(value = "users", key = "#publicId")
     @Transactional

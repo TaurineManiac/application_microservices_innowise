@@ -27,7 +27,7 @@ public class PaymentCardController {
     private final PaymentCardService paymentCardService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId == authentication.principal")
     public ResponseEntity<PaymentCardResponse> createCard(
             @PathVariable UUID publicUserId,
             @Valid @RequestBody CreatePaymentCardRequest request) {
@@ -38,7 +38,7 @@ public class PaymentCardController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId == authentication.principal")
     public ResponseEntity<Page<PaymentCardResponse>> getCardsByUser(
             @PathVariable UUID publicUserId,
             @RequestParam(required = false) String number,
@@ -66,7 +66,7 @@ public class PaymentCardController {
     }
 
     @PutMapping("/{cardId}")
-    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId == authentication.principal")
     public ResponseEntity<PaymentCardResponse> updateCard(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId,
@@ -78,7 +78,7 @@ public class PaymentCardController {
     }
 
     @PatchMapping("/{cardId}/activate")
-    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId == authentication.principal")
     public ResponseEntity<Void> activateCard(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {
@@ -89,7 +89,7 @@ public class PaymentCardController {
     }
 
     @PatchMapping("/{cardId}/deactivate")
-    @PreAuthorize("hasRole('ADMIN') or #publicUserId.toString() == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #publicUserId == authentication.principal")
     public ResponseEntity<Void> deactivateCard(
             @PathVariable UUID publicUserId,
             @PathVariable Long cardId) {

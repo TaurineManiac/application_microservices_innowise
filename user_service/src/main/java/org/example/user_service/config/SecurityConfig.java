@@ -1,6 +1,8 @@
 package org.example.user_service.config;
 
 import lombok.RequiredArgsConstructor;
+import org.example.user_service.filter.HeaderAuthenticationFilter;
+import org.example.user_service.filter.InternalApiFIlter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,16 +16,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class SecurityConfig{
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final HeaderAuthenticationFilter headerAuthenticationFilter;
+    private final InternalApiFIlter internalApiFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/v1/users").permitAll()
+                        .requestMatchers("/api/v1/users/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(
@@ -31,7 +34,8 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         )
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(internalApiFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
