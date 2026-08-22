@@ -253,7 +253,7 @@ class AuthenticationServiceTest {
                 .build();
 
         when(credentialRepository.findByEmail("john@test.com")).thenReturn(Optional.empty());
-        when(userServiceClient.createUser(any(CreateUserRequest.class))).thenReturn(userResponse);
+        when(userServiceClient.createUser(any(CreateUserRequest.class), anyString())).thenReturn(userResponse);
         when(passwordEncoder.encode("password123")).thenReturn("hashed-password123");
         when(credentialRepository.save(any(Credential.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -277,7 +277,7 @@ class AuthenticationServiceTest {
                 .isInstanceOf(EmailAlreadyExistsException.class)
                 .hasMessageContaining("john@test.com");
 
-        verify(userServiceClient, never()).createUser(any());
+        verify(userServiceClient, never()).createUser(any(), any());
         verify(credentialRepository, never()).save(any());
     }
 }
