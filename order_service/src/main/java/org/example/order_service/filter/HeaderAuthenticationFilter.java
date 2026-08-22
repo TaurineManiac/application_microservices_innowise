@@ -39,7 +39,7 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
                 );
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(publicId, authorities);
+                        new UsernamePasswordAuthenticationToken(publicId, null, authorities);
 
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
