@@ -4,27 +4,29 @@ spring:
 
   cloud:
     gateway:
-      routes:
-        - id: auth-service
-          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=${AUTH_SERVICE_PREDICATE_LOGIN:/api/auth/login},${AUTH_SERVICE_PREDICATE_REFRESH:/api/auth/refresh},${AUTH_SERVICE_PREDICATE_REGISTER:/api/auth/register}
-          filters:
-            - StripPrefix=0
+      server:
+        webflux:
+          routes:
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=${AUTH_SERVICE_PREDICATE_LOGIN:/api/auth/login},${AUTH_SERVICE_PREDICATE_REFRESH:/api/auth/refresh},${AUTH_SERVICE_PREDICATE_REGISTER:/api/auth/register}
+              filters:
+                - StripPrefix=0
 
-        - id: user-service
-          uri: ${USER_SERVICE_URL:http://localhost:8080}
-          predicates:
-            - Path=${USER_SERVICE_PREDICATE:/api/v1/users/**}
-          filters:
-            - StripPrefix=0
+            - id: user-service
+              uri: ${USER_SERVICE_URL:http://localhost:8080}
+              predicates:
+                - Path=${USER_SERVICE_PREDICATE:/api/v1/users/**}
+              filters:
+                - StripPrefix=0
 
-        - id: order-service
-          uri: ${ORDER_SERVICE_URL:http://localhost:8083}
-          predicates:
-            - Path=${ORDER_SERVICE_PREDICATE:/api/v1/orders/**}
-          filters:
-            - StripPrefix=0
+            - id: order-service
+              uri: ${ORDER_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=${ORDER_SERVICE_PREDICATE_ORDERS:/api/v1/orders/**}, ${ORDER_SERVICE_PREDICATE_ITEMS:/api/v1/items/**}
+              filters:
+                - StripPrefix=0
 
 gateway:
   public:
@@ -39,7 +41,10 @@ auth:
     url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
 management:
+  endpoint:
+    gateway:
+      access: unrestricted
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,gateway
