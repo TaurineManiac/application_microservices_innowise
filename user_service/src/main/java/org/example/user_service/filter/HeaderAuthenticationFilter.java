@@ -19,13 +19,7 @@ import java.util.UUID;
 
 @Component
 @Slf4j
-@Order(Ordered.HIGHEST_PRECEDENCE+2)
-public class HeaderAuthenticationFilter extends OncePerRequestFilter implements Ordered{
-
-    @Override
-    public int getOrder(){
-        return Ordered.HIGHEST_PRECEDENCE+2;
-    }
+public class HeaderAuthenticationFilter extends OncePerRequestFilter{
 
     @Override
     protected void doFilterInternal(
@@ -52,7 +46,7 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter implements 
                 );
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(publicId, authorities);
+                        new UsernamePasswordAuthenticationToken(publicId, null, authorities);
 
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
