@@ -19,8 +19,6 @@ import java.util.List;
 @Slf4j
 public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
-    private String authServiceUrl;
-
     private final WebClient webClient;
 
     private List<String> publicPaths;
@@ -52,6 +50,15 @@ public class JwtAuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
         String token = authorizationHeader.substring(7);
 
+        return validateTokenAndForward(exchange,chain,token,path);
+    }
+
+    private Mono<Void> validateTokenAndForward(
+            ServerWebExchange exchange,
+            GatewayFilterChain chain,
+            String token,
+            String path
+    ){
         return webClient.get()
                 .uri("/api/auth/validate")
                 .header("Authorization", "Bearer " + token)
