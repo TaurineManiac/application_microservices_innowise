@@ -1,6 +1,29 @@
 databaseChangeLog:
   - changeSet:
-      id: 0
-      author: admin
+      id: 2
+      author: Ignat
       changes:
-        -
+        - createIndex:
+            tableName: payments
+            indexName: idx_payments_order_id
+            columns:
+              - column:
+                  name: order_id
+        - createIndex:
+            tableName: payments
+            indexName: idx_payments_user_id
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: payments
+            indexName: idx_payments_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: payments
+            indexName: idx_payments_timestamp
+            columns:
+              - column:
+                  name: timestamp

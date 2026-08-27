@@ -1,6 +1,3 @@
 databaseChangeLog:
-  - changeSet:
-      id: 0
-      author: admin
-      changes:
-        -
+  - include:
+      file: db/changelog/changeset/v1-create-tables.yaml
