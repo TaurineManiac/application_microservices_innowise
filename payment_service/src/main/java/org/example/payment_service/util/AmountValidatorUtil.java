@@ -4,7 +4,7 @@ import org.example.payment_service.enums.AmountConstraints;
 
 import java.math.BigDecimal;
 
-public class AmountValidator {
+public class AmountValidatorUtil {
 
     private static boolean isValidAmount(BigDecimal amount) {
         if (amount == null) {
