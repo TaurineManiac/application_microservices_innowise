@@ -1,8 +1,8 @@
-package org.example.user_service.config;
+package org.example.payment_service.config;
 
 import lombok.RequiredArgsConstructor;
-import org.example.user_service.filter.HeaderAuthenticationFilter;
-import org.example.user_service.filter.InternalApiFIlter;
+import org.example.payment_service.filter.HeaderAuthenticationFilter;
+import org.example.payment_service.filter.InternalApiFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -16,17 +16,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-public class SecurityConfig{
+public class SecurityConfig {
 
     private final HeaderAuthenticationFilter headerAuthenticationFilter;
-    private final InternalApiFIlter internalApiFilter;
+    private final InternalApiFilter internalApiFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/v1/users/internal/**").permitAll()
+                        .requestMatchers("/api/v1/payments/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(
