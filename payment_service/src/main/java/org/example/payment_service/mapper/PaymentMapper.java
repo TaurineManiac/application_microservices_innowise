@@ -1,7 +1,8 @@
 package org.example.payment_service.mapper;
 
 import org.example.payment_service.dto.PaymentRequestEvent;
-import org.example.payment_service.dto.PaymentResponseEvent;
+import org.example.payment_service.dto.PaymentFullResponseEvent;
+import org.example.payment_service.dto.PaymentStatusEvent;
 import org.example.payment_service.entity.Payment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -20,8 +21,12 @@ public interface PaymentMapper{
     @Mapping(target = "status", ignore = true)
     Payment toEntity(PaymentRequestEvent event);
 
-    PaymentResponseEvent toResponse(Payment payment);
+    PaymentFullResponseEvent toFullResponse(Payment payment);
 
-    List<PaymentResponseEvent> toResponseList(List<Payment> payments);
+    PaymentStatusEvent toStatusEvent(Payment payment);
+
+    PaymentStatusEvent toStatusEvent(PaymentFullResponseEvent event);
+
+    List<PaymentFullResponseEvent> toResponseList(List<Payment> payments);
 
 }
