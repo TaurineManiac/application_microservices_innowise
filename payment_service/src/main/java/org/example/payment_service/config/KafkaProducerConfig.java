@@ -1,8 +1,8 @@
-package org.example.user_service.config;
+package org.example.payment_service.config;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.example.user_service.dto.UserStatusEvent;
+import org.example.payment_service.dto.PaymentStatusEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +20,7 @@ public class KafkaProducerConfig {
     private String bootstrapServers;
 
     @Bean
-    public ProducerFactory<String, UserStatusEvent> producerFactory() {
+    public ProducerFactory<String, PaymentStatusEvent> producerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -31,7 +31,7 @@ public class KafkaProducerConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, UserStatusEvent> kafkaTemplate() {
+    public KafkaTemplate<String, PaymentStatusEvent> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }
