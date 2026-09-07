@@ -2,6 +2,7 @@ package org.example.payment_service.dto;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
 import org.example.payment_service.enums.PaymentStatus;
 
 import java.math.BigDecimal;
@@ -9,26 +10,20 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class PaymentResponseEvent {
-    @Column(nullable = false)
+    @NotNull
     private Long id;
-
-    @Column(nullable = false)
+    @NotNull
     private UUID orderPublicId;
-
-    @Column(nullable = false)
+    @NotNull
     private UUID userPublicId;
-
-    @Column(nullable = false)
+    @NotNull
     private PaymentStatus status;
-
-    @Column(nullable = false)
     @Digits(integer = 17, fraction = 2)
+    @NotNull
     private BigDecimal amount;
-
-    @Column(nullable = false)
+    @NotNull
     private LocalDateTime createdAt;
-
-    @Column(nullable = false)
+    @NotNull
     private LocalDateTime updatedAt;
 
 }
