@@ -1,4 +1,4 @@
-package org.example.order_service.util;
+package org.example.payment_service.util;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
