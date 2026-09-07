@@ -19,12 +19,13 @@ public class AmountValidatorUtil {
         return precision <= AmountConstraints.MAX_PRECISION.getValue();
     }
 
-    public static void validateOrThrow(BigDecimal amount) {
+    public static BigDecimal isValidAmountOrThrow(BigDecimal amount) {
         if (!isValidAmount(amount)) {
             throw new IllegalArgumentException(
                     "Amount must have at most " + AmountConstraints.MAX_SCALE.getValue() + " decimal places and " +
                             "total digits ≤ " + AmountConstraints.MAX_PRECISION.getValue() + ". Provided: " + amount
             );
         }
+        return amount;
     }
 }
