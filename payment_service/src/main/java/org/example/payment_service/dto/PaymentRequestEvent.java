@@ -2,18 +2,27 @@ package org.example.payment_service.dto;
 
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PaymentRequestEvent {
-    @Column(nullable = false)
+    @NotNull
     private UUID orderPublicId;
 
-    @Column(nullable = false)
+    @NotNull
     private UUID userPublicId;
 
     @Digits(integer = 17, fraction = 2)
-    @Column(nullable = false)
+    @NotNull
+    @Positive
     private BigDecimal amount;
 }

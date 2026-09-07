@@ -1,15 +1,20 @@
 package org.example.payment_service.dto;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import org.example.payment_service.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public class PaymentResponseEvent {
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PaymentFullResponseEvent {
     @NotNull
     private Long id;
     @NotNull
