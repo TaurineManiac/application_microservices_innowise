@@ -51,13 +51,15 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          JAVA_TOOL_OPTIONS: -Djdk.tls.client.protocols=TLSv1.2
         run: |
           if [ -n "$SONAR_TOKEN" ]; then
             mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
               -Dsonar.projectKey=taurinemaniac \
               -Dsonar.organization=taurinemaniac \
               -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.login=$SONAR_TOKEN
+              -Dsonar.token=$SONAR_TOKEN \
+              -Dsonar.java.api.version=21
           else
             echo "Skipping SonarQube analysis (no token provided)"
           fi
@@ -136,13 +138,15 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          JAVA_TOOL_OPTIONS: -Djdk.tls.client.protocols=TLSv1.2
         run: |
           if [ -n "$SONAR_TOKEN" ]; then
             mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
               -Dsonar.projectKey=taurinemaniac \
               -Dsonar.organization=taurinemaniac \
               -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.login=$SONAR_TOKEN
+              -Dsonar.token=$SONAR_TOKEN \
+              -Dsonar.java.api.version=21
           else
             echo "Skipping SonarQube analysis (no token provided)"
           fi
@@ -221,13 +225,15 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          JAVA_TOOL_OPTIONS: -Djdk.tls.client.protocols=TLSv1.2
         run: |
           if [ -n "$SONAR_TOKEN" ]; then
             mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
               -Dsonar.projectKey=taurinemaniac \
               -Dsonar.organization=taurinemaniac \
               -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.login=$SONAR_TOKEN
+              -Dsonar.token=$SONAR_TOKEN \
+              -Dsonar.java.api.version=21
           else
             echo "Skipping SonarQube analysis (no token provided)"
           fi
