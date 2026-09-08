@@ -20,25 +20,26 @@ import java.util.UUID;
 @Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Payment {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_public_id", nullable = false)
+    @Column(name = "order_id", nullable = false)
     private UUID orderPublicId;
 
-    @Column(name = "user_public_id", nullable = false)
+    @Column(name = "user_id", nullable = false)
     private UUID userPublicId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private PaymentStatus status;
 
-    @Column(name = "amount", nullable = false, precision = 19, scale = 2)
+    @Column(name = "payment_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "timestamp", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
