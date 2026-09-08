@@ -1,4 +1,4 @@
-package org.example.user_service.dto;
+package org.example.payment_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
