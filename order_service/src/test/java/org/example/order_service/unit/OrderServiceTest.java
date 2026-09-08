@@ -1,12 +1,21 @@
 package org.example.order_service.unit;
 
+import org.example.order_service.client.PaymentProvider;
 import org.example.order_service.client.UserInfoProvider;
-import org.example.order_service.dto.*;
+import org.example.order_service.dto.CreateOrderItemRequest;
+import org.example.order_service.dto.CreateOrderRequest;
+import org.example.order_service.dto.OrderFilterRequest;
+import org.example.order_service.dto.OrderResponse;
+import org.example.order_service.dto.PaymentFullResponseEvent;
+import org.example.order_service.dto.PaymentRequestEvent;
+import org.example.order_service.dto.UpdateOrderStatusRequest;
+import org.example.order_service.dto.UserInfo;
 import org.example.order_service.entity.Item;
 import org.example.order_service.entity.Order;
 import org.example.order_service.entity.OrderItem;
 import org.example.order_service.enums.ItemStatus;
 import org.example.order_service.enums.OrderStatus;
+import org.example.order_service.enums.PaymentStatus;
 import org.example.order_service.exception.AccessDeniedException;
 import org.example.order_service.exception.EntityNotFoundException;
 import org.example.order_service.mapper.OrderMapper;
@@ -38,7 +47,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +69,9 @@ class OrderServiceTest {
     @Mock
     private OrderMapper orderMapper;
 
+    @Mock
+    private PaymentProvider paymentProvider;
+
     @InjectMocks
     private OrderService orderService;
 
@@ -72,7 +85,6 @@ class OrderServiceTest {
     private OrderResponse response;
     private UserInfo userInfo;
 
-
     private MockedStatic<SecurityUtils> securityUtilsMock;
 
     @BeforeEach
@@ -81,7 +93,6 @@ class OrderServiceTest {
         currentUserId = UUID.randomUUID();
         anotherUserId = UUID.randomUUID();
         orderPublicId = UUID.randomUUID();
-
 
         securityUtilsMock = mockStatic(SecurityUtils.class);
         securityUtilsMock.when(SecurityUtils::getCurrentUserPublicId).thenReturn(currentUserId);
@@ -135,7 +146,6 @@ class OrderServiceTest {
         }
     }
 
-
     private void mockSecurityAdmin() {
         securityUtilsMock
                 .when(SecurityUtils::getCurrentUserPublicId)
@@ -145,7 +155,6 @@ class OrderServiceTest {
                 .when(SecurityUtils::isAdmin)
                 .thenReturn(true);
     }
-
 
     @Test
     void createOrder_shouldCreateOrder() {
@@ -181,6 +190,17 @@ class OrderServiceTest {
         when(userInfoProvider.getUserInfo(currentUserId))
                 .thenReturn(userInfo);
 
+        when(paymentProvider.createPayment(any(PaymentRequestEvent.class)))
+                .thenReturn(PaymentFullResponseEvent.builder()
+                        .id(1L)
+                        .orderPublicId(orderPublicId)
+                        .userPublicId(currentUserId)
+                        .amount(new BigDecimal("2400.00"))
+                        .status(PaymentStatus.COMPLETED)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build());
+
         OrderResponse result =
                 orderService.createOrder(request);
 
@@ -215,6 +235,9 @@ class OrderServiceTest {
 
         assertThat(savedOrder.getOrderItems())
                 .containsExactly(orderItem);
+
+        verify(paymentProvider, times(1))
+                .createPayment(any(PaymentRequestEvent.class));
     }
 
     @Test
@@ -285,6 +308,17 @@ class OrderServiceTest {
         when(userInfoProvider.getUserInfo(currentUserId))
                 .thenReturn(userInfo);
 
+        when(paymentProvider.createPayment(any(PaymentRequestEvent.class)))
+                .thenReturn(PaymentFullResponseEvent.builder()
+                        .id(1L)
+                        .orderPublicId(orderPublicId)
+                        .userPublicId(currentUserId)
+                        .amount(new BigDecimal("2550.00"))
+                        .status(PaymentStatus.COMPLETED)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build());
+
         orderService.createOrder(request);
 
         ArgumentCaptor<Order> captor =
@@ -303,6 +337,9 @@ class OrderServiceTest {
                         orderItem,
                         secondOrderItem
                 );
+
+        verify(paymentProvider, times(1))
+                .createPayment(any(PaymentRequestEvent.class));
     }
 
     @Test
@@ -336,6 +373,9 @@ class OrderServiceTest {
                         anyInt(),
                         any(Order.class)
                 );
+
+        verify(paymentProvider, never())
+                .createPayment(any(PaymentRequestEvent.class));
     }
 
     @Test
@@ -371,6 +411,9 @@ class OrderServiceTest {
                         anyInt(),
                         any(Order.class)
                 );
+
+        verify(paymentProvider, never())
+                .createPayment(any(PaymentRequestEvent.class));
     }
 
     @Test
@@ -493,11 +536,6 @@ class OrderServiceTest {
                 .getUserInfo(anotherUserId);
     }
 
-
-// =========================================================
-// GET ORDERS
-// =========================================================
-
     @Test
     void getOrders_shouldReturnCurrentUserOrders() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -507,7 +545,7 @@ class OrderServiceTest {
         when(orderMapper.toResponse(order)).thenReturn(response);
         when(userInfoProvider.getUserInfo(currentUserId)).thenReturn(userInfo);
 
-        OrderFilterRequest filter = new OrderFilterRequest(); // пустой – все фильтры null
+        OrderFilterRequest filter = new OrderFilterRequest();
         Page<OrderResponse> result = orderService.getOrders(filter, pageable);
 
         assertThat(result.getContent()).containsExactly(response);
@@ -611,8 +649,6 @@ class OrderServiceTest {
                 .containsExactly(response);
     }
 
-
-
     @Test
     void updateOrder_shouldUpdateStatus() {
 
@@ -707,8 +743,6 @@ class OrderServiceTest {
                 .save(any(Order.class));
     }
 
-
-
     @Test
     void deleteOrder_shouldSoftDelete() {
 
@@ -743,7 +777,6 @@ class OrderServiceTest {
         verify(orderRepository, never())
                 .save(any(Order.class));
     }
-
 
     @Test
     void reviveOrder_shouldReviveDeletedOrderForOwner() {

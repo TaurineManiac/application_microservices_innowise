@@ -1,44 +1,42 @@
 package org.example.order_service.integration;
 
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
-
 import org.example.order_service.TestcontainersConfiguration;
+import org.example.order_service.client.PaymentProvider;
 import org.example.order_service.client.UserInfoProvider;
+import org.example.order_service.dto.PaymentFullResponseEvent;
+import org.example.order_service.dto.PaymentRequestEvent;
 import org.example.order_service.entity.Item;
 import org.example.order_service.entity.Order;
 import org.example.order_service.entity.OrderItem;
 import org.example.order_service.enums.ItemStatus;
 import org.example.order_service.enums.OrderStatus;
+import org.example.order_service.enums.PaymentStatus;
 import org.example.order_service.repository.ItemRepository;
 import org.example.order_service.repository.OrderItemRepository;
 import org.example.order_service.repository.OrderRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -62,6 +60,9 @@ class OrderControllerIntegrationTest {
 
     @MockitoBean
     private UserInfoProvider userInfoProvider;
+
+    @MockitoBean
+    private PaymentProvider paymentProvider;
 
     private UUID currentUserId;
     private UUID anotherUserId;
@@ -95,8 +96,18 @@ class OrderControllerIntegrationTest {
                                 .email("john@test.com")
                                 .build()
                 );
-    }
 
+        when(paymentProvider.createPayment(any(PaymentRequestEvent.class)))
+                .thenReturn(PaymentFullResponseEvent.builder()
+                        .id(1L)
+                        .orderPublicId(UUID.randomUUID())
+                        .userPublicId(currentUserId)
+                        .amount(new BigDecimal("100.00"))
+                        .status(PaymentStatus.COMPLETED)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build());
+    }
 
     @Test
     void createOrder_shouldCreateOrder() throws Exception {
@@ -313,8 +324,6 @@ class OrderControllerIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-
-
     @Test
     void getOrder_shouldReturnOwnOrder() throws Exception {
 
@@ -528,7 +537,6 @@ class OrderControllerIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-
     @Test
     void updateOrder_shouldRequireAdmin() throws Exception {
 
@@ -652,7 +660,6 @@ class OrderControllerIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-
     @Test
     void deleteOrder_shouldRequireAdmin() throws Exception {
 
@@ -718,7 +725,6 @@ class OrderControllerIntegrationTest {
                 )
                 .andExpect(status().isNotFound());
     }
-
 
     @Test
     void reviveOrder_shouldRequireAdmin() throws Exception {
