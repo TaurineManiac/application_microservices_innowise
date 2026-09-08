@@ -1,10 +1,11 @@
-package org.example.payment_service.dto;
+package org.example.order_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.payment_service.enums.PaymentStatus;
+import org.example.order_service.enums.PaymentStatus;
+
 
 import java.math.BigDecimal;
 import java.util.UUID;

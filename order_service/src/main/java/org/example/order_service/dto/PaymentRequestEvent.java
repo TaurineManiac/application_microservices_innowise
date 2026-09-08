@@ -1,6 +1,5 @@
-package org.example.payment_service.dto;
+package org.example.order_service.dto;
 
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
