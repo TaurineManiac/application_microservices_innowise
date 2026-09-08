@@ -1,4 +1,4 @@
-package org.example.payment_service.enums;
+package org.example.order_service.enums;
 
 import lombok.Getter;
 
