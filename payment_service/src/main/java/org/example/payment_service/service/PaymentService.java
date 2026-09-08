@@ -6,6 +6,7 @@ import org.example.payment_service.dto.PaymentFilterRequest;
 import org.example.payment_service.dto.PaymentRequestEvent;
 import org.example.payment_service.dto.PaymentFullResponseEvent;
 import org.example.payment_service.entity.Payment;
+import org.example.payment_service.exception.AccessDeniedException;
 import org.example.payment_service.kafka.PaymentEventProducer;
 import org.example.payment_service.mapper.PaymentMapper;
 import org.example.payment_service.repository.PaymentRepository;
@@ -16,7 +17,6 @@ import org.example.payment_service.util.SecurityUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +53,8 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Page<PaymentFullResponseEvent> getPayments(PaymentFilterRequest filter, Pageable pageable) {
 
+        validateFilterDates(filter);
+
         UUID currentUserId = SecurityUtils.getCurrentUserPublicId();
         boolean isAdmin = SecurityUtils.isAdmin();
 
@@ -78,13 +80,30 @@ public class PaymentService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasRole('ADMIN') or #userPublicId == authentication.principal")
     public BigDecimal getTotalForUser(UUID userPublicId, LocalDateTime from, LocalDateTime to) {
+        validateDateRange(from, to);
         return repository.getTotalAmountForUser(userPublicId, from, to);
     }
 
     @Transactional(readOnly = true)
     @PreAuthorize("hasRole('ADMIN')")
     public BigDecimal getTotalForAllUsers(LocalDateTime from, LocalDateTime to) {
+        validateDateRange(from, to);
         return repository.getTotalAmount(from, to);
+    }
+
+    private void validateFilterDates(PaymentFilterRequest filter) {
+        validateDateRange(filter.getCreatedFrom(), filter.getCreatedTo());
+        validateDateRange(filter.getUpdatedFrom(), filter.getUpdatedTo());
+        if (filter.getMinAmount() != null && filter.getMaxAmount() != null
+                && filter.getMinAmount().compareTo(filter.getMaxAmount()) > 0) {
+            throw new IllegalArgumentException("'minAmount' must be less than or equal to 'maxAmount'");
+        }
+    }
+
+    private void validateDateRange(LocalDateTime from, LocalDateTime to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("'from' date must be before or equal to 'to' date");
+        }
     }
 
 }
