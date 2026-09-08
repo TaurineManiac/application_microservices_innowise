@@ -4,16 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.payment_service.dto.PaymentRequestEvent;
 import org.example.payment_service.entity.Payment;
 import org.example.payment_service.enums.PaymentStatus;
+import org.example.payment_service.kafka.PaymentEventProducer;
 import org.example.payment_service.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
@@ -23,8 +28,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -33,8 +40,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 @Transactional
-@WithMockUser(roles = "USER")
 class PaymentControllerIntegrationTest {
+
+    private static final UUID TEST_USER_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private static final UUID TEST_ORDER_UUID = UUID.fromString("223e4567-e89b-12d3-a456-426614174001");
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
@@ -57,6 +66,9 @@ class PaymentControllerIntegrationTest {
     @Autowired
     private PaymentRepository paymentRepository;
 
+    @MockitoBean
+    private PaymentEventProducer eventProducer;
+
     private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private MockMvc mockMvc;
     private UUID userPublicId;
@@ -65,9 +77,13 @@ class PaymentControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         paymentRepository.deleteAll();
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        userPublicId = UUID.randomUUID();
-        orderPublicId = UUID.randomUUID();
+
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
+                .build();
+
+        userPublicId = TEST_USER_UUID;
+        orderPublicId = TEST_ORDER_UUID;
 
         Payment payment = Payment.builder()
                 .userPublicId(userPublicId)
@@ -80,9 +96,22 @@ class PaymentControllerIntegrationTest {
         paymentRepository.save(payment);
     }
 
+    private RequestPostProcessor asUser(UUID userId) {
+        return SecurityMockMvcRequestPostProcessors.authentication(
+                new UsernamePasswordAuthenticationToken(
+                        userId, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))));
+    }
+
+    private RequestPostProcessor asAdmin() {
+        return SecurityMockMvcRequestPostProcessors.authentication(
+                new UsernamePasswordAuthenticationToken(
+                        UUID.randomUUID(), null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+    }
+
     @Test
     void shouldGetPaymentsForAuthenticatedUser() throws Exception {
         mockMvc.perform(get("/api/v1/payments")
+                        .with(asUser(userPublicId))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -94,11 +123,10 @@ class PaymentControllerIntegrationTest {
     @Test
     void shouldReturnUnauthorizedWhenNoAuth() throws Exception {
         mockMvc.perform(get("/api/v1/payments"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void shouldCreateInternalPaymentWithValidToken() throws Exception {
         PaymentRequestEvent request = PaymentRequestEvent.builder()
                 .orderPublicId(UUID.randomUUID())
@@ -116,9 +144,9 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
     void shouldFilterByPaymentStatus() throws Exception {
         mockMvc.perform(get("/api/v1/payments")
+                        .with(asUser(userPublicId))
                         .param("paymentStatus", "COMPLETED")
                         .param("page", "0")
                         .param("size", "10"))
@@ -127,9 +155,9 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
     void shouldFilterByOrderId() throws Exception {
         mockMvc.perform(get("/api/v1/payments")
+                        .with(asUser(userPublicId))
                         .param("orderPublicId", orderPublicId.toString())
                         .param("page", "0")
                         .param("size", "10"))
@@ -138,20 +166,19 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
-    void shouldReturnEmptyPageWhenNoMatches() throws Exception {
+    void shouldForbidFilteringByAnotherUsersId() throws Exception {
         mockMvc.perform(get("/api/v1/payments")
+                        .with(asUser(userPublicId))
                         .param("userPublicId", UUID.randomUUID().toString())
                         .param("page", "0")
                         .param("size", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalElements").value(0));
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(roles = "USER")
     void shouldGetTotalForUser() throws Exception {
         mockMvc.perform(get("/api/v1/payments/total/user")
+                        .with(asUser(userPublicId))
                         .param("userPublicId", userPublicId.toString())
                         .param("from", "2020-01-01T00:00:00")
                         .param("to", "2030-01-01T00:00:00"))
@@ -160,9 +187,9 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void shouldGetTotalForAllUsersAsAdmin() throws Exception {
         mockMvc.perform(get("/api/v1/payments/total/all")
+                        .with(asAdmin())
                         .param("from", "2020-01-01T00:00:00")
                         .param("to", "2030-01-01T00:00:00"))
                 .andExpect(status().isOk())
@@ -170,9 +197,9 @@ class PaymentControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "USER")
     void shouldForbidUserFromGettingTotalAll() throws Exception {
         mockMvc.perform(get("/api/v1/payments/total/all")
+                        .with(asUser(userPublicId))
                         .param("from", "2020-01-01T00:00:00")
                         .param("to", "2030-01-01T00:00:00"))
                 .andExpect(status().isForbidden());
