@@ -15,16 +15,16 @@ public class PaymentSpecification {
 
     public static Specification<Payment> hasStatus(PaymentStatus paymentStatus) {
         return (root, criteriaQuery, criteriaBuilder) -> {
-            if(paymentStatus == null){
+            if (paymentStatus == null) {
                 return criteriaBuilder.conjunction();
             }
-            return criteriaBuilder.equal(root.get("paymentStatus"), paymentStatus);
+            return criteriaBuilder.equal(root.get("status"), paymentStatus);
         };
     }
 
     public static Specification<Payment> hasUserPublicId(UUID userPublicId) {
         return (root, query, criteriaBuilder) -> {
-            if(userPublicId == null){
+            if (userPublicId == null) {
                 return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.equal(root.get("userPublicId"), userPublicId);
@@ -32,9 +32,9 @@ public class PaymentSpecification {
     }
 
     public static Specification<Payment> hasOrderPublicId(UUID orderPublicId) {
-        return (root, query, criteriaBuilder) ->  {
-            if(orderPublicId == null){
-                criteriaBuilder.conjunction();
+        return (root, query, criteriaBuilder) -> {
+            if (orderPublicId == null) {
+                return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.equal(root.get("orderPublicId"), orderPublicId);
         };
@@ -68,7 +68,7 @@ public class PaymentSpecification {
             Function<Root<Payment>, Path<T>> fieldExtractor,
             T from,
             T to
-    ){
+    ) {
         return (
                 root,
                 query,
@@ -86,7 +86,5 @@ public class PaymentSpecification {
             }
             return criteriaBuilder.lessThanOrEqualTo(fieldPath, to);
         };
-
     }
-
 }
