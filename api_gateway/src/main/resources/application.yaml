@@ -28,6 +28,13 @@ spring:
               filters:
                 - StripPrefix=0
 
+            - id: payment-service
+              uri: ${PAYMENT_SERVICE_URL:http://payment-service:8080}
+              predicates:
+                - Path=${PAYMENT_SERVICE_PREDICATE:/api/v1/payments/**}
+              filters:
+                - StripPrefix=0
+
 gateway:
   public:
     paths: ${AUTH_SERVICE_PREDICATE_LOGIN:/api/auth/login},${AUTH_SERVICE_PREDICATE_REFRESH:/api/auth/refresh},${AUTH_SERVICE_PREDICATE_REGISTER:/api/auth/register}
