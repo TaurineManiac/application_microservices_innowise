@@ -1,3 +1,10 @@
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+---
+
 spring:
   application:
     name: order_service
@@ -6,7 +13,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${ORDER_DB_HOST:localhost}:${ORDER_DB_PORT:5432}/${ORDER_DB_NAME:order_db}
     username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres123}
+    password: ${POSTGRES_PASSWORD:postgres}
 
   jpa:
     hibernate:
