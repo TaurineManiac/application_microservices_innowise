@@ -25,8 +25,6 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String path = request.getRequestURI();
-
         String publicIdHeader = request.getHeader("X-User-UUID");
         String roleHeader =  request.getHeader("X-User-Role");
 

@@ -3,6 +3,7 @@ package org.example.order_service;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -15,4 +16,8 @@ public class TestcontainersConfiguration {
         return new PostgreSQLContainer(DockerImageName.parse("postgres:latest"));
     }
 
+    @Bean
+    DynamicPropertyRegistrar internalServiceTokenProperty() {
+        return registry -> registry.add("internal.service.token", () -> "test-token");
+    }
 }

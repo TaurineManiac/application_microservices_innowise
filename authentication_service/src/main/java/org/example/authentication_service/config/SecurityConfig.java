@@ -25,7 +25,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         authorizeRequests -> authorizeRequests.requestMatchers(
-                                "/api/auth/login",
+                                        "/actuator/**",
+                                        "/api/auth/login",
                                         "/api/auth/refresh",
                                         "/api/auth/validate",
                                         "/api/auth/register",

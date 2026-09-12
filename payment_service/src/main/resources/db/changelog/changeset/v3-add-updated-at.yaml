@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: Ignat
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
