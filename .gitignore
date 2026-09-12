@@ -1,4 +1,5 @@
 # Environment variables (NEVER commit these!)
+k8s/01-secrets.yaml
 .env
 *.env
 application-*.properties
