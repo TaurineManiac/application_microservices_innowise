@@ -1,3 +1,9 @@
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+---
 spring:
   application:
     name: api-gateway
@@ -25,6 +31,13 @@ spring:
               uri: ${ORDER_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=${ORDER_SERVICE_PREDICATE_ORDERS:/api/v1/orders/**}, ${ORDER_SERVICE_PREDICATE_ITEMS:/api/v1/items/**}
+              filters:
+                - StripPrefix=0
+
+            - id: payment-service
+              uri: ${PAYMENT_SERVICE_URL:http://payment-service:8080}
+              predicates:
+                - Path=${PAYMENT_SERVICE_PREDICATE:/api/v1/payments/**}
               filters:
                 - StripPrefix=0
 

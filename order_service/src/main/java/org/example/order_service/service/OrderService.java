@@ -2,6 +2,7 @@ package org.example.order_service.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.order_service.client.PaymentProvider;
 import org.example.order_service.client.UserInfoProvider;
 import org.example.order_service.dto.*;
 import org.example.order_service.entity.Item;
@@ -36,6 +37,7 @@ public class OrderService {
     private final ItemRepository itemRepository;
     private final OrderItemService orderItemService;
     private final OrderMapper orderMapper;
+    private final PaymentProvider paymentProvider;
 
     private OrderResponse enrichWithUserInfo(OrderResponse response) {
         UserInfo userInfo = userInfoProvider.getUserInfo(response.getUserPublicId());
@@ -103,6 +105,15 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
         log.info("Order created with id: {}", saved.getId());
+
+        PaymentRequestEvent paymentRequest = PaymentRequestEvent.builder()
+                .orderPublicId(saved.getOrderPublicId())
+                .userPublicId(currentUserId)
+                .amount(saved.getPrice())
+                .build();
+
+        PaymentFullResponseEvent paymentResponse = paymentProvider.createPayment(paymentRequest);
+        log.info("Payment initiated: id={}, status={}", paymentResponse.getId(), paymentResponse.getStatus());
 
         return enrichWithUserInfo(orderMapper.toResponse(saved));
     }

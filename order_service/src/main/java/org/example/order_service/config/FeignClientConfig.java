@@ -13,32 +13,25 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Slf4j
 public class FeignClientConfig {
 
-    @Bean
-    public RequestInterceptor gatewayHeaderInterceptor() {
-        return new RequestInterceptor() {
-            @Override
-            public void apply(RequestTemplate requestTemplate) {
-                ServletRequestAttributes attributes =
-                        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-
-                if(attributes != null) {
-                    log.debug("No request attributes, skipping header propagation");
-                    return;
-                }
-
-                HttpServletRequest request = attributes.getRequest();
-
-                String publicIdHeader = request.getHeader("X-Public-Id");
-                String roleHeader = request.getHeader("X-User-Role");
-
-                if (publicIdHeader != null) {
-                    requestTemplate.header("X-User-UUID", publicIdHeader);
-                }
-                if (roleHeader != null) {
-                    requestTemplate.header("X-User-Role", roleHeader);
-                }
-
-            }
-        };
-    }
+//    @Bean
+//    public RequestInterceptor requestInterceptor() {
+//        return requestTemplate -> {
+//            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+//            if (attributes == null) {
+//                log.debug("No request attributes, skipping header propagation");
+//                return;
+//            }
+//            HttpServletRequest request = attributes.getRequest();
+//            String userUuid = request.getHeader("X-User-UUID");
+//            String userRole = request.getHeader("X-User-Role");
+//
+//            if (userUuid != null) {
+//                requestTemplate.header("X-User-UUID", userUuid);
+//            }
+//            if (userRole != null) {
+//                requestTemplate.header("X-User-Role", userRole);
+//            }
+//            log.debug("Propagating headers: X-User-UUID={}, X-User-Role={}", userUuid, userRole);
+//        };
+//    }
 }

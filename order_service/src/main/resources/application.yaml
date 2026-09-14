@@ -1,11 +1,19 @@
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+---
+
 spring:
   application:
     name: order_service
-
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   datasource:
     url: jdbc:postgresql://${ORDER_DB_HOST:localhost}:${ORDER_DB_PORT:5432}/${ORDER_DB_NAME:order_db}
     username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres123}
+    password: ${POSTGRES_PASSWORD:postgres}
 
   jpa:
     hibernate:
@@ -28,6 +36,11 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 3
+      paymentService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
 
 user:
   service:
@@ -41,6 +54,18 @@ retry:
   delay: 500
   multiplier: 2
 
+payment:
+  service:
+    url: ${PAYMENT_SERVICE_URL:http://payment-service:8080}
+
 internal:
   service:
     token: ${INTERNAL_SERVICE_TOKEN}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+        loggerLevel: basic
