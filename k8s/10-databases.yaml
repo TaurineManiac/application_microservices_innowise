@@ -1,32 +1,40 @@
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service
 metadata:
-  name: auth-db-pvc
+  name: auth-db
   namespace: bank
+  labels:
+    app: auth-db
 spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 1Gi
+  ports:
+    - port: 5432
+      name: postgres
+  clusterIP: None
+  selector:
+    app: auth-db
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: auth-db
   namespace: bank
 spec:
+  serviceName: "auth-db"
   replicas: 1
   selector:
-    matchLabels: { app: auth-db }
+    matchLabels:
+      app: auth-db
   template:
     metadata:
-      labels: { app: auth-db }
+      labels:
+        app: auth-db
     spec:
       containers:
         - name: postgres
           image: postgres:17
           ports:
             - containerPort: 5432
+              name: postgres
           env:
             - name: POSTGRES_DB
               value: auth_db
@@ -49,50 +57,52 @@ spec:
               command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
             initialDelaySeconds: 30
             periodSeconds: 10
-      volumes:
-        - name: data
-          persistentVolumeClaim: { claimName: auth-db-pvc }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth-db
+  name: user-db
   namespace: bank
+  labels:
+    app: user-db
 spec:
-  selector: { app: auth-db }
   ports:
     - port: 5432
-      targetPort: 5432
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: user-db-pvc
-  namespace: bank
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 1Gi
+      name: postgres
+  clusterIP: None
+  selector:
+    app: user-db
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: user-db
   namespace: bank
 spec:
+  serviceName: "user-db"
   replicas: 1
   selector:
-    matchLabels: { app: user-db }
+    matchLabels:
+      app: user-db
   template:
     metadata:
-      labels: { app: user-db }
+      labels:
+        app: user-db
     spec:
       containers:
         - name: postgres
           image: postgres:17
           ports:
             - containerPort: 5432
+              name: postgres
           env:
             - name: POSTGRES_DB
               value: user_db
@@ -115,50 +125,52 @@ spec:
               command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
             initialDelaySeconds: 30
             periodSeconds: 10
-      volumes:
-        - name: data
-          persistentVolumeClaim: { claimName: user-db-pvc }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: user-db
+  name: order-db
   namespace: bank
+  labels:
+    app: order-db
 spec:
-  selector: { app: user-db }
   ports:
     - port: 5432
-      targetPort: 5432
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: order-db-pvc
-  namespace: bank
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 1Gi
+      name: postgres
+  clusterIP: None
+  selector:
+    app: order-db
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: order-db
   namespace: bank
 spec:
+  serviceName: "order-db"
   replicas: 1
   selector:
-    matchLabels: { app: order-db }
+    matchLabels:
+      app: order-db
   template:
     metadata:
-      labels: { app: order-db }
+      labels:
+        app: order-db
     spec:
       containers:
         - name: postgres
           image: postgres:17
           ports:
             - containerPort: 5432
+              name: postgres
           env:
             - name: POSTGRES_DB
               value: order_db
@@ -181,50 +193,52 @@ spec:
               command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
             initialDelaySeconds: 30
             periodSeconds: 10
-      volumes:
-        - name: data
-          persistentVolumeClaim: { claimName: order-db-pvc }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: order-db
+  name: payment-db
   namespace: bank
+  labels:
+    app: payment-db
 spec:
-  selector: { app: order-db }
   ports:
     - port: 5432
-      targetPort: 5432
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: payment-db-pvc
-  namespace: bank
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 1Gi
+      name: postgres
+  clusterIP: None
+  selector:
+    app: payment-db
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: payment-db
   namespace: bank
 spec:
+  serviceName: "payment-db"
   replicas: 1
   selector:
-    matchLabels: { app: payment-db }
+    matchLabels:
+      app: payment-db
   template:
     metadata:
-      labels: { app: payment-db }
+      labels:
+        app: payment-db
     spec:
       containers:
         - name: postgres
           image: postgres:17
           ports:
             - containerPort: 5432
+              name: postgres
           env:
             - name: POSTGRES_DB
               value: payment_db
@@ -247,17 +261,11 @@ spec:
               command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
             initialDelaySeconds: 30
             periodSeconds: 10
-      volumes:
-        - name: data
-          persistentVolumeClaim: { claimName: payment-db-pvc }
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: payment-db
-  namespace: bank
-spec:
-  selector: { app: payment-db }
-  ports:
-    - port: 5432
-      targetPort: 5432
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
